@@ -221,6 +221,37 @@ impl Where {
         self
     }
 
+    pub fn between<S>(&mut self, min: S, max: S) -> &mut Self
+    where
+        S: ToString,
+    {
+        // Checks
+        let min = min.to_string();
+        let max = max.to_string();
+
+        if min.is_empty() {
+            self.error = Some(SqlBuilderError::NoWhereValue(self.text.clone()));
+            return self;
+        }
+
+        if max.is_empty() {
+            self.error = Some(SqlBuilderError::NoWhereValue(self.text.clone()));
+            return self;
+        }
+
+        // Change
+        if let Some(prefix) = &self.prefix {
+            self.text.push(' ');
+            self.text.push_str(&prefix);
+            self.prefix = None;
+        }
+        self.text.push_str(" BETWEEN ");
+        self.text.push_str(&min);
+        self.text.push_str(" AND ");
+        self.text.push_str(&max);
+        self
+    }
+
     pub fn build(&self) -> Result<String, SqlBuilderError> {
         match &self.error {
             Some(err) => Err(err.clone()),
@@ -312,5 +343,11 @@ mod tests {
     fn test_where_ne() {
         let text = Where::new("abc").ne(10).to_string();
         assert_eq!("abc <> 10", &text);
+    }
+
+    #[test]
+    fn test_where_between() {
+        let text = Where::new("abc").between(1, 10).to_string();
+        assert_eq!("abc BETWEEN 1 AND 10", &text);
     }
 }
