@@ -252,6 +252,16 @@ impl Where {
         self
     }
 
+    pub fn is_null(&mut self) -> &mut Self {
+        // Change
+        if let Some(prefix) = &self.prefix {
+            self.text.push(' ');
+            self.text.push_str(&prefix);
+            self.prefix = None;
+        }
+        self.text.push_str(" IS NULL");
+        self
+    }
     pub fn build(&self) -> Result<String, SqlBuilderError> {
         match &self.error {
             Some(err) => Err(err.clone()),
@@ -349,5 +359,11 @@ mod tests {
     fn test_where_between() {
         let text = Where::new("abc").between(1, 10).to_string();
         assert_eq!("abc BETWEEN 1 AND 10", &text);
+    }
+
+    #[test]
+    fn test_where_null() {
+        let text = Where::new("abc").is_null().to_string();
+        assert_eq!("abc IS NULL", &text);
     }
 }
