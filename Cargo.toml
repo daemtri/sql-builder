@@ -14,5 +14,5 @@ readme = "README.md"
 travis-ci = { repository = "perdumonocle/sql-builder" }
 
 [dependencies]
-anyhow = "1.0"
-thiserror = "1.0"
+anyhow = "=1.0.65"
+thiserror = "=1.0.36"
