@@ -275,7 +275,7 @@ impl Where {
         self
     }
 
-    pub fn lt(&mut self, smth: &str) -> &mut Self {
+    pub fn lower_then(&mut self, smth: &str) -> &mut Self {
         // Checks
         if smth.is_empty() {
             self.error = Some(SqlBuilderError::NoWhereValue(self.text.clone()));
@@ -293,7 +293,7 @@ impl Where {
         self
     }
 
-    pub fn le(&mut self, smth: &str) -> &mut Self {
+    pub fn lower_equal(&mut self, smth: &str) -> &mut Self {
         // Checks
         if smth.is_empty() {
             self.error = Some(SqlBuilderError::NoWhereValue(self.text.clone()));
@@ -311,7 +311,7 @@ impl Where {
         self
     }
 
-    pub fn gt(&mut self, smth: &str) -> &mut Self {
+    pub fn greater_then(&mut self, smth: &str) -> &mut Self {
         // Checks
         if smth.is_empty() {
             self.error = Some(SqlBuilderError::NoWhereValue(self.text.clone()));
@@ -329,7 +329,7 @@ impl Where {
         self
     }
 
-    pub fn ge(&mut self, smth: &str) -> &mut Self {
+    pub fn greater_equal(&mut self, smth: &str) -> &mut Self {
         // Checks
         if smth.is_empty() {
             self.error = Some(SqlBuilderError::NoWhereValue(self.text.clone()));
@@ -460,25 +460,25 @@ mod tests {
 
     #[test]
     fn test_where_lt() {
-        let text = Where::new("abc").lt("1").to_string();
+        let text = Where::new("abc").lower_then("1").to_string();
         assert_eq!("abc < 1", &text);
     }
 
     #[test]
     fn test_where_le() {
-        let text = Where::new("abc").le("1").to_string();
+        let text = Where::new("abc").lower_equal("1").to_string();
         assert_eq!("abc <= 1", &text);
     }
 
     #[test]
     fn test_where_gt() {
-        let text = Where::new("abc").gt("1").to_string();
+        let text = Where::new("abc").greater_then("1").to_string();
         assert_eq!("abc > 1", &text);
     }
 
     #[test]
     fn test_where_ge() {
-        let text = Where::new("abc").ge("1").to_string();
+        let text = Where::new("abc").greater_equal("1").to_string();
         assert_eq!("abc >= 1", &text);
     }
 }
