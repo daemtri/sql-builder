@@ -1,5 +1,6 @@
-use crate::error::SqlBuilderError;
 use std::fmt;
+
+use crate::error::SqlBuilderError;
 
 #[macro_export]
 macro_rules! and {
@@ -274,6 +275,78 @@ impl Where {
         self
     }
 
+    pub fn lt(&mut self, smth: &str) -> &mut Self {
+        // Checks
+        if smth.is_empty() {
+            self.error = Some(SqlBuilderError::NoWhereValue(self.text.clone()));
+            return self;
+        }
+
+        // Change
+        if let Some(prefix) = &self.prefix {
+            self.text.push(' ');
+            self.text.push_str(&prefix);
+            self.prefix = None;
+        }
+        self.text.push_str(" < ");
+        self.text.push_str(smth);
+        self
+    }
+
+    pub fn le(&mut self, smth: &str) -> &mut Self {
+        // Checks
+        if smth.is_empty() {
+            self.error = Some(SqlBuilderError::NoWhereValue(self.text.clone()));
+            return self;
+        }
+
+        // Change
+        if let Some(prefix) = &self.prefix {
+            self.text.push(' ');
+            self.text.push_str(&prefix);
+            self.prefix = None;
+        }
+        self.text.push_str(" <= ");
+        self.text.push_str(smth);
+        self
+    }
+
+    pub fn gt(&mut self, smth: &str) -> &mut Self {
+        // Checks
+        if smth.is_empty() {
+            self.error = Some(SqlBuilderError::NoWhereValue(self.text.clone()));
+            return self;
+        }
+
+        // Change
+        if let Some(prefix) = &self.prefix {
+            self.text.push(' ');
+            self.text.push_str(&prefix);
+            self.prefix = None;
+        }
+        self.text.push_str(" > ");
+        self.text.push_str(smth);
+        self
+    }
+
+    pub fn ge(&mut self, smth: &str) -> &mut Self {
+        // Checks
+        if smth.is_empty() {
+            self.error = Some(SqlBuilderError::NoWhereValue(self.text.clone()));
+            return self;
+        }
+
+        // Change
+        if let Some(prefix) = &self.prefix {
+            self.text.push(' ');
+            self.text.push_str(&prefix);
+            self.prefix = None;
+        }
+        self.text.push_str(" >= ");
+        self.text.push_str(smth);
+        self
+    }
+
     pub fn build(&self) -> Result<String, SqlBuilderError> {
         match &self.error {
             Some(err) => Err(err.clone()),
@@ -383,5 +456,29 @@ mod tests {
     fn test_where_not_null() {
         let text = Where::new("abc").not_null().to_string();
         assert_eq!("abc IS NOT NULL", &text);
+    }
+
+    #[test]
+    fn test_where_lt() {
+        let text = Where::new("abc").lt("1").to_string();
+        assert_eq!("abc < 1", &text);
+    }
+
+    #[test]
+    fn test_where_le() {
+        let text = Where::new("abc").le("1").to_string();
+        assert_eq!("abc <= 1", &text);
+    }
+
+    #[test]
+    fn test_where_gt() {
+        let text = Where::new("abc").gt("1").to_string();
+        assert_eq!("abc > 1", &text);
+    }
+
+    #[test]
+    fn test_where_ge() {
+        let text = Where::new("abc").ge("1").to_string();
+        assert_eq!("abc >= 1", &text);
     }
 }
