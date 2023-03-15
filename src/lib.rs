@@ -688,6 +688,39 @@ impl SqlBuilder {
         self
     }
 
+    /// Join constraint to the last JOIN part.
+    ///
+    /// ```
+    /// # use anyhow::Result;
+    ///
+    /// use sql_builder::SqlBuilder;
+    ///
+    ///
+    /// # fn main() -> Result<()> {
+    /// let sql = SqlBuilder::select_from("books AS b")
+    ///     .field("b.title")
+    ///     .field("s.total")
+    ///     .join("shops AS s")
+    ///     .on_eq("b.id", "s.book")
+    ///     .and_eq("b.name", 1)
+    ///     .sql()?;
+    ///
+    /// assert_eq!("SELECT b.title, s.total FROM books AS b JOIN shops AS s ON b.id = s.book AND b.name = 1;", &sql);
+    /// // add                                                                                   ^^^^^^   ^
+    /// // here                                                                                  c1      c2
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn and_eq<S: ToString, T: ToString>(&mut self, c1: S, c2: T) -> &mut Self {
+        if let Some(last) = self.joins.last_mut() {
+            last.push_str(" AND ");
+            last.push_str(&c1.to_string());
+            last.push_str(" = ");
+            last.push_str(&c2.to_string());
+        }
+        self
+    }
+
     /// Set DISTINCT for fields.
     ///
     /// ```
