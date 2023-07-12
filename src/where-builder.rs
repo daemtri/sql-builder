@@ -222,6 +222,24 @@ impl Where {
         self
     }
 
+    pub fn is_in<S>(&mut self, smth: Vec<S>) -> &mut Self
+    where
+        S: ToString,
+    {
+        // Checks
+        let smth = smth.iter().map(|x| x.to_string()).collect::<Vec<String>>();
+        if smth.is_empty() {
+            self.error = Some(SqlBuilderError::NoWhereValue(self.text.clone()));
+            return self;
+        }
+
+        self.text.push_str(" in ");
+        self.text.push_str("(");
+        self.text.push_str(&smth.join(", "));
+        self.text.push_str(")");
+        self
+    }
+
     pub fn between<S>(&mut self, min: S, max: S) -> &mut Self
     where
         S: ToString,
@@ -432,6 +450,12 @@ mod tests {
     fn test_where_eq() {
         let text = Where::new("abc").eq(10).to_string();
         assert_eq!("abc = 10", &text);
+    }
+
+    #[test]
+    fn test_where_is_in() {
+        let text = Where::new("abc").is_in(vec![1, 2, 3]).to_string();
+        assert_eq!("abc in (1, 2, 3)", &text);
     }
 
     #[test]
