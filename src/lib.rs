@@ -36,8 +36,8 @@
 //! # fn main() -> Result<()> {
 //! let sql = SqlBuilder::select_from("company")
 //!     .fields(&["id", "name"])
-//!     .and_where("salary BETWEEN ? AND ?".binds(&[&10_000, &25_000]))
-//!     .and_where("staff BETWEEN ? AND ?".bind(&100).bind(&200))
+//!     .and_where("salary BETWEEN ? AND ?".binds((10_000, 25_000)))
+//!     .and_where("staff BETWEEN ? AND ?".bind(100).bind(200))
 //!     .sql()?;
 //!
 //! assert_eq!("SELECT id, name FROM company WHERE (salary BETWEEN 10000 AND 25000) AND (staff BETWEEN 100 AND 200);", &sql);
@@ -77,8 +77,8 @@
 //!     .values(&["$1, ?, ?"])
 //!     .values(&["$2, ?, ?"])
 //!     .sql()?
-//!     .bind_nums(&[&"D&G", &"G&D"])
-//!     .binds(&[&10_000, &100]);
+//!     .bind_nums(("D&G", "G&D"))
+//!     .binds((10_000, 100));
 //!
 //! assert_eq!("INSERT INTO company (name, salary, staff) VALUES ('D&G', 10000, 100), ('G&D', 10000, 100);", &sql);
 //! # Ok(())
@@ -112,8 +112,7 @@
 //!     .set("comment", &quote("up $1$$"))
 //!     .and_where("salary < ?".bind(&1_000))
 //!     .sql()?
-//!     .bind_nums(&[&100]);
-//!
+//!     .bind_nums((100,));
 //! assert_eq!("UPDATE company SET salary = salary + 100, comment = 'up 100$' WHERE salary < 1000;", &sql);
 //! # Ok(())
 //! # }

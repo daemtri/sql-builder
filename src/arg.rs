@@ -251,6 +251,14 @@ impl<T: SqlArg> SqlArg for &Option<T> {
     }
 }
 
+pub struct NULL;
+
+impl SqlArg for NULL {
+    fn sql_arg(&self) -> String {
+        String::from("NULL")
+    }
+}
+
 impl<T: SqlArg> SqlArg for Vec<T> {
     fn sql_arg(&self) -> String {
         self.iter()
@@ -292,14 +300,14 @@ macro_rules! impl_sql_arg_tuple {
         impl<$($type: SqlArg),*> SqlArg for ($($type,)*) {
             fn sql_arg(&self) -> String {
                 let ($($name,)*) = self;
-                [$($name.sql_arg(),)*].join(", ")
+                format!("({})", [$($name.sql_arg(),)*].join(", "))
             }
         }
 
         impl<$($type: SqlArg),*> SqlArg for &($($type,)*) {
             fn sql_arg(&self) -> String {
                 let ($($name,)*) = self;
-                [$($name.sql_arg(),)*].join(", ")
+                format!("({})", [$($name.sql_arg(),)*].join(", "))
             }
         }
     };
@@ -321,19 +329,23 @@ macro_rules! impl_sql_arg_array {
     ($len:expr) => {
         impl<T: SqlArg> SqlArg for [T; $len] {
             fn sql_arg(&self) -> String {
-                self.iter()
+                let res = self
+                    .iter()
                     .map(|item| item.sql_arg())
                     .collect::<Vec<_>>()
-                    .join(", ")
+                    .join(", ");
+                format!("({})", res)
             }
         }
 
         impl<T: SqlArg> SqlArg for &[T; $len] {
             fn sql_arg(&self) -> String {
-                self.iter()
+                let res = self
+                    .iter()
                     .map(|item| item.sql_arg())
                     .collect::<Vec<_>>()
-                    .join(", ")
+                    .join(", ");
+                format!("({})", res)
             }
         }
     };
@@ -352,3 +364,114 @@ impl_sql_arg_array!(9);
 impl_sql_arg_array!(10);
 impl_sql_arg_array!(11);
 impl_sql_arg_array!(12);
+
+pub trait SqlArgs {
+    fn sql_args(&self) -> Vec<String>;
+}
+
+macro_rules! impl_sql_args_tuple {
+    ($($type:ident : $name:ident),*) => {
+        impl<$($type: SqlArg),*> SqlArgs for ($($type,)*) {
+            fn sql_args(&self) -> Vec<String> {
+                let ($($name,)*) = self;
+                let mut args = Vec::new();
+                $(args.push($name.sql_arg());)*
+                args
+            }
+        }
+
+        impl<$($type: SqlArg),*> SqlArgs for &($($type,)*) {
+            fn sql_args(&self) -> Vec<String> {
+                let ($($name,)*) = self;
+                let mut args = Vec::new();
+                $(args.push($name.sql_arg());)*
+                args
+            }
+        }
+    };
+}
+
+impl_sql_args_tuple!(A:a);
+impl_sql_args_tuple!(A:a, B:b);
+impl_sql_args_tuple!(A:a, B:b, C:c);
+impl_sql_args_tuple!(A:a, B:b, C:c, D:d);
+impl_sql_args_tuple!(A:a, B:b, C:c, D:d, E:e);
+impl_sql_args_tuple!(A:a, B:b, C:c, D:d, E:e, F:f);
+impl_sql_args_tuple!(A:a, B:b, C:c, D:d, E:e, F:f, G:g);
+impl_sql_args_tuple!(A:a, B:b, C:c, D:d, E:e, F:f, G:g, H:h);
+impl_sql_args_tuple!(A:a, B:b, C:c, D:d, E:e, F:f, G:g, H:h, I:i);
+impl_sql_args_tuple!(A:a, B:b, C:c, D:d, E:e, F:f, G:g, H:h, I:i, J:j);
+impl_sql_args_tuple!(A:a, B:b, C:c, D:d, E:e, F:f, G:g, H:h, I:i, J:j, K:k);
+impl_sql_args_tuple!(A:a, B:b, C:c, D:d, E:e, F:f, G:g, H:h, I:i, J:j, K:k, L:l);
+
+impl SqlArgs for &[&dyn SqlArg] {
+    fn sql_args(&self) -> Vec<String> {
+        self.iter().map(|arg| arg.sql_arg()).collect()
+    }
+}
+
+impl SqlArgs for Vec<&dyn SqlArg> {
+    fn sql_args(&self) -> Vec<String> {
+        self.iter().map(|arg| arg.sql_arg()).collect()
+    }
+}
+
+impl SqlArgs for Vec<Box<dyn SqlArg>> {
+    fn sql_args(&self) -> Vec<String> {
+        self.iter().map(|arg| arg.sql_arg()).collect()
+    }
+}
+
+impl SqlArgs for &[Box<dyn SqlArg>] {
+    fn sql_args(&self) -> Vec<String> {
+        self.iter().map(|arg| arg.sql_arg()).collect()
+    }
+}
+
+impl SqlArgs for &[Option<&dyn SqlArg>] {
+    fn sql_args(&self) -> Vec<String> {
+        self.iter()
+            .map(|arg| {
+                arg.as_ref()
+                    .map(|arg| arg.sql_arg())
+                    .unwrap_or_else(|| "NULL".into())
+            })
+            .collect()
+    }
+}
+
+impl SqlArgs for Vec<Option<&dyn SqlArg>> {
+    fn sql_args(&self) -> Vec<String> {
+        self.iter()
+            .map(|arg| {
+                arg.as_ref()
+                    .map(|arg| arg.sql_arg())
+                    .unwrap_or_else(|| "NULL".into())
+            })
+            .collect()
+    }
+}
+
+impl SqlArgs for Vec<Option<Box<dyn SqlArg>>> {
+    fn sql_args(&self) -> Vec<String> {
+        self.iter()
+            .map(|arg| {
+                arg.as_ref()
+                    .map(|arg| arg.sql_arg())
+                    .unwrap_or_else(|| "NULL".into())
+            })
+            .collect()
+    }
+}
+
+impl SqlArgs for &[Option<Box<dyn SqlArg>>] {
+    fn sql_args(&self) -> Vec<String> {
+        self.iter()
+            .map(|arg| {
+                arg.as_ref()
+                    .map(|arg| arg.sql_arg())
+                    .unwrap_or_else(|| "NULL".into())
+            })
+            .collect()
+    }
+}

@@ -1,4 +1,4 @@
-use crate::arg::SqlArg;
+use crate::arg::{SqlArg, SqlArgs};
 use std::collections::HashMap;
 
 pub trait Bind {
@@ -12,7 +12,7 @@ pub trait Bind {
     /// # fn main() -> Result<()> {
     /// let sql = SqlBuilder::select_from("books")
     ///     .fields(&["title", "price"])
-    ///     .and_where("price BETWEEN ? AND ?".bind(&100).bind(&200))
+    ///     .and_where("price BETWEEN ? AND ?".bind(100).bind(200))
     ///     .sql()?;
     ///
     /// assert_eq!("SELECT title, price FROM books WHERE price BETWEEN 100 AND 200;", &sql);
@@ -33,14 +33,16 @@ pub trait Bind {
     /// # fn main() -> Result<()> {
     /// let sql = SqlBuilder::select_from("books")
     ///     .fields(&["title", "price"])
-    ///     .and_where("price > ? AND title LIKE ?".binds(&[&100, &"Harry Potter%"]))
+    ///     .and_where("price > ? AND title LIKE ?".binds((100, "Harry Potter%")))
     ///     .sql()?;
     ///
     /// assert_eq!("SELECT title, price FROM books WHERE price > 100 AND title LIKE 'Harry Potter%';", &sql);
     /// # Ok(())
     /// # }
     /// ```
-    fn binds(&self, args: &[&dyn SqlArg]) -> String;
+    fn binds<SS>(&self, args: SS) -> String
+    where
+        SS: SqlArgs;
 
     /// Replace all $N with a value.
     ///
@@ -95,7 +97,7 @@ pub trait Bind {
     /// # fn main() -> Result<()> {
     /// let sql = SqlBuilder::select_from("books")
     ///     .fields(&["title", "price"])
-    ///     .and_where("price > $1 AND price < $1 + $2".bind_nums(&[&100, &200]))
+    ///     .and_where("price > $1 AND price < $1 + $2".bind_nums((100, 200)))
     ///     .sql()?;
     ///
     /// assert_eq!("SELECT title, price FROM books WHERE price > 100 AND price < 100 + 200;", &sql);
@@ -114,13 +116,15 @@ pub trait Bind {
     ///     .and_where("price > $1")
     ///     .and_where("price < $1 + $2")
     ///     .sql()?
-    ///     .bind_nums(&[&100, &200]);
+    ///     .bind_nums((100, 200));
     ///
     /// assert_eq!("SELECT title, price FROM books WHERE (price > 100) AND (price < 100 + 200);", &sql);
     /// # Ok(())
     /// # }
     /// ```
-    fn bind_nums(&self, args: &[&dyn SqlArg]) -> String;
+    fn bind_nums<SS>(&self, args: SS) -> String
+    where
+        SS: SqlArgs;
 
     /// Replace all :name: with a value.
     ///
@@ -209,14 +213,17 @@ impl Bind for &str {
     /// # fn main() -> Result<()> {
     /// let sql = SqlBuilder::select_from("books")
     ///     .fields(&["title", "price"])
-    ///     .and_where("price > ? AND title LIKE ?".binds(&[&100, &"Harry Potter%"]))
+    ///     .and_where("price > ? AND title LIKE ?".binds((100, "Harry Potter%")))
     ///     .sql()?;
     ///
     /// assert_eq!("SELECT title, price FROM books WHERE price > 100 AND title LIKE 'Harry Potter%';", &sql);
     /// # Ok(())
     /// # }
     /// ```
-    fn binds(&self, args: &[&dyn SqlArg]) -> String {
+    fn binds<SS>(&self, args: SS) -> String
+    where
+        SS: SqlArgs,
+    {
         (*self).to_string().binds(args)
     }
 
@@ -276,7 +283,7 @@ impl Bind for &str {
     /// # fn main() -> Result<()> {
     /// let sql = SqlBuilder::select_from("books")
     ///     .fields(&["title", "price"])
-    ///     .and_where("price > $1 AND price < $1 + $2".bind_nums(&[&100, &200]))
+    ///     .and_where("price > $1 AND price < $1 + $2".bind_nums((100, 200)))
     ///     .sql()?;
     ///
     /// assert_eq!("SELECT title, price FROM books WHERE price > 100 AND price < 100 + 200;", &sql);
@@ -295,13 +302,16 @@ impl Bind for &str {
     ///     .and_where("price > $1")
     ///     .and_where("price < $1 + $2")
     ///     .sql()?
-    ///     .bind_nums(&[&100, &200]);
+    ///     .bind_nums((100, 200));
     ///
     /// assert_eq!("SELECT title, price FROM books WHERE (price > 100) AND (price < 100 + 200);", &sql);
     /// # Ok(())
     /// # }
     /// ```
-    fn bind_nums(&self, args: &[&dyn SqlArg]) -> String {
+    fn bind_nums<SS>(&self, args: SS) -> String
+    where
+        SS: SqlArgs,
+    {
         (*self).to_string().bind_nums(args)
     }
 
@@ -398,20 +408,24 @@ impl Bind for String {
     /// # fn main() -> Result<()> {
     /// let sql = SqlBuilder::select_from("books")
     ///     .fields(&["title", "price"])
-    ///     .and_where("price > ? AND title LIKE ?".binds(&[&100, &"Harry Potter%"]))
+    ///     .and_where("price > ? AND title LIKE ?".binds((100, "Harry Potter%")))
     ///     .sql()?;
     ///
     /// assert_eq!("SELECT title, price FROM books WHERE price > 100 AND title LIKE 'Harry Potter%';", &sql);
     /// # Ok(())
     /// # }
     /// ```
-    fn binds(&self, args: &[&dyn SqlArg]) -> String {
+    fn binds<SS>(&self, args: SS) -> String
+    where
+        SS: SqlArgs,
+    {
+        let args = args.sql_args();
         let mut offset = 0;
         let mut res = String::new();
         let len = args.len();
         for ch in self.chars() {
             if ch == '?' {
-                res.push_str(&args[offset].sql_arg());
+                res.push_str(&args[offset]);
                 offset = (offset + 1) % len;
             } else {
                 res.push(ch);
@@ -477,7 +491,7 @@ impl Bind for String {
     /// # fn main() -> Result<()> {
     /// let sql = SqlBuilder::select_from("books")
     ///     .fields(&["title", "price"])
-    ///     .and_where("price > $1 AND price < $1 + $2".bind_nums(&[&100, &200]))
+    ///     .and_where("price > $1 AND price < $1 + $2".bind_nums((100, 200)))
     ///     .sql()?;
     ///
     /// assert_eq!("SELECT title, price FROM books WHERE price > 100 AND price < 100 + 200;", &sql);
@@ -496,13 +510,17 @@ impl Bind for String {
     ///     .and_where("price > $1")
     ///     .and_where("price < $1 + $2")
     ///     .sql()?
-    ///     .bind_nums(&[&100, &200]);
+    ///     .bind_nums((100, 200));
     ///
     /// assert_eq!("SELECT title, price FROM books WHERE (price > 100) AND (price < 100 + 200);", &sql);
     /// # Ok(())
     /// # }
     /// ```
-    fn bind_nums(&self, args: &[&dyn SqlArg]) -> String {
+    fn bind_nums<SS>(&self, args: SS) -> String
+    where
+        SS: SqlArgs,
+    {
+        let args = args.sql_args();
         let mut res = String::new();
         let mut num = 0usize;
         let mut wait_digit = false;
@@ -513,7 +531,7 @@ impl Bind for String {
                     if num > 0 {
                         let idx = num - 1;
                         if len > idx {
-                            res.push_str(&args[idx].sql_arg());
+                            res.push_str(&args[idx]);
                         }
                         num = 0;
                     } else {
@@ -529,7 +547,7 @@ impl Bind for String {
                 } else {
                     let idx = num - 1;
                     if len > idx {
-                        res.push_str(&args[idx].sql_arg());
+                        res.push_str(&args[idx]);
                     }
                     res.push(ch);
                     wait_digit = false;
@@ -542,7 +560,7 @@ impl Bind for String {
         if wait_digit && num > 0 {
             let idx = num - 1;
             if len > idx {
-                res.push_str(&args[idx].sql_arg());
+                res.push_str(&args[idx]);
             }
         }
         res
@@ -723,27 +741,21 @@ mod tests {
 
     #[test]
     fn test_binds() -> Result<()> {
-        assert_eq!("10f20o30o10", &"?f?o?o?".binds(&[&10, &20, &30]));
+        assert_eq!("10f20o30o10", &"?f?o?o?".binds((10, 20, 30)));
         assert_eq!(
             "'abc'f'def'o'ghi'o'abc'",
-            &"?f?o?o?".binds(&[&"abc", &"def", &"ghi"])
+            &"?f?o?o?".binds(("abc", "def", "ghi"))
         );
-        assert_eq!(
-            "10f20o30o10",
-            &String::from("?f?o?o?").binds(&[&10, &20, &30])
-        );
+        assert_eq!("10f20o30o10", &String::from("?f?o?o?").binds((10, 20, 30)));
         assert_eq!(
             "10f'AAA'oTRUEo10",
-            &String::from("?f?o?o?").binds(&[&10, &"AAA", &true])
+            &String::from("?f?o?o?").binds((10, "AAA", true))
         );
         assert_eq!(
             "10f'AAA'o$oTRUE",
-            &String::from("$1f$02o$$o$3$4").bind_nums(&[&10, &"AAA", &true])
+            &String::from("$1f$02o$$o$3$4").bind_nums((10, "AAA", true))
         );
-        assert_eq!(
-            "1f1.5o0.0000001o1",
-            &"?f?o?o?".binds(&[&1.0, &1.5, &0.0000001])
-        );
+        assert_eq!("1f1.5o0.0000001o1", &"?f?o?o?".binds((1.0, 1.5, 0.0000001)));
 
         Ok(())
     }
@@ -752,7 +764,7 @@ mod tests {
     fn test_bind_doc() -> Result<()> {
         let sql = SqlBuilder::select_from("books")
             .fields(&["title", "price"])
-            .and_where("price > ? AND title LIKE ?".binds(&[&100, &"Harry Potter%"]))
+            .and_where("price > ? AND title LIKE ?".binds((100, "Harry Potter%")))
             .sql()?;
 
         assert_eq!(
@@ -815,8 +827,7 @@ mod tests {
 
     #[test]
     fn test_in() -> Result<()> {
-        let ids = Vec::from([1, 2, 3]);
-        assert_eq!("10 IN (1, 2, 3)", &"10 IN (?)".bind(ids));
+        assert_eq!("10 IN (1, 2, 3)", &"10 IN (?)".bind(vec![1, 2, 3]));
         Ok(())
     }
 }
