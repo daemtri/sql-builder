@@ -695,7 +695,7 @@ impl<'a> BindNames<'a> for &[(&'a str, &dyn SqlArg)] {
 mod tests {
     use super::*;
     use crate::prelude::*;
-    use anyhow::Result;
+    use anyhow::{Ok, Result};
 
     #[test]
     fn test_bind() -> Result<()> {
@@ -810,6 +810,13 @@ mod tests {
 
         let foo = Some("foo");
         assert_eq!("fo'foo'o", &"fo?o".bind(&foo));
+        Ok(())
+    }
+
+    #[test]
+    fn test_in() -> Result<()> {
+        let ids = Vec::from([1, 2, 3]);
+        assert_eq!("10 IN (1, 2, 3)", &"10 IN (?)".bind(ids));
         Ok(())
     }
 }

@@ -316,3 +316,39 @@ impl_sql_arg_tuple!(A:a, B:b, C:c, D:d, E:e, F:f, G:g, H:h, I:i);
 impl_sql_arg_tuple!(A:a, B:b, C:c, D:d, E:e, F:f, G:g, H:h, I:i, J:j);
 impl_sql_arg_tuple!(A:a, B:b, C:c, D:d, E:e, F:f, G:g, H:h, I:i, J:j, K:k);
 impl_sql_arg_tuple!(A:a, B:b, C:c, D:d, E:e, F:f, G:g, H:h, I:i, J:j, K:k, L:l);
+
+macro_rules! impl_sql_arg_array {
+    ($len:expr) => {
+        impl<T: SqlArg> SqlArg for [T; $len] {
+            fn sql_arg(&self) -> String {
+                self.iter()
+                    .map(|item| item.sql_arg())
+                    .collect::<Vec<_>>()
+                    .join(", ")
+            }
+        }
+
+        impl<T: SqlArg> SqlArg for &[T; $len] {
+            fn sql_arg(&self) -> String {
+                self.iter()
+                    .map(|item| item.sql_arg())
+                    .collect::<Vec<_>>()
+                    .join(", ")
+            }
+        }
+    };
+}
+
+// 为常见的数组长度实现
+impl_sql_arg_array!(1);
+impl_sql_arg_array!(2);
+impl_sql_arg_array!(3);
+impl_sql_arg_array!(4);
+impl_sql_arg_array!(5);
+impl_sql_arg_array!(6);
+impl_sql_arg_array!(7);
+impl_sql_arg_array!(8);
+impl_sql_arg_array!(9);
+impl_sql_arg_array!(10);
+impl_sql_arg_array!(11);
+impl_sql_arg_array!(12);
