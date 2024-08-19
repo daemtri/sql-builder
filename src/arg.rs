@@ -5,6 +5,18 @@ pub trait SqlArg {
     fn sql_arg(&self) -> String;
 }
 
+impl SqlArg for &dyn SqlArg {
+    fn sql_arg(&self) -> String {
+        (**self).sql_arg()
+    }
+}
+
+impl SqlArg for Box<dyn SqlArg> {
+    fn sql_arg(&self) -> String {
+        (**self).sql_arg()
+    }
+}
+
 impl SqlArg for str {
     fn sql_arg(&self) -> String {
         quote(self)
@@ -17,6 +29,12 @@ impl SqlArg for &str {
     }
 }
 
+impl SqlArg for &&str {
+    fn sql_arg(&self) -> String {
+        quote(self)
+    }
+}
+
 impl SqlArg for Cow<'_, str> {
     fn sql_arg(&self) -> String {
         quote(self[..].to_owned())
@@ -24,6 +42,12 @@ impl SqlArg for Cow<'_, str> {
 }
 
 impl SqlArg for String {
+    fn sql_arg(&self) -> String {
+        quote(self)
+    }
+}
+
+impl SqlArg for &String {
     fn sql_arg(&self) -> String {
         quote(self)
     }
@@ -226,3 +250,60 @@ impl<T: SqlArg> SqlArg for &Option<T> {
         }
     }
 }
+
+impl<T: SqlArg> SqlArg for Vec<T> {
+    fn sql_arg(&self) -> String {
+        self.iter()
+            .map(|v| v.sql_arg())
+            .collect::<Vec<_>>()
+            .join(", ")
+    }
+}
+
+impl<T: SqlArg> SqlArg for &Vec<T> {
+    fn sql_arg(&self) -> String {
+        self.iter()
+            .map(|v| v.sql_arg())
+            .collect::<Vec<_>>()
+            .join(", ")
+    }
+}
+
+impl<T: SqlArg> SqlArg for &[T] {
+    fn sql_arg(&self) -> String {
+        self.iter()
+            .map(|v| v.sql_arg())
+            .collect::<Vec<_>>()
+            .join(", ")
+    }
+}
+
+macro_rules! impl_sql_arg_tuple {
+    ($($type:ident : $name:ident),*) => {
+        impl<$($type: SqlArg),*> SqlArg for ($($type,)*) {
+            fn sql_arg(&self) -> String {
+                let ($($name,)*) = self;
+                [$($name.sql_arg(),)*].join(", ")
+            }
+        }
+
+        impl<$($type: SqlArg),*> SqlArg for &($($type,)*) {
+            fn sql_arg(&self) -> String {
+                let ($($name,)*) = self;
+                [$($name.sql_arg(),)*].join(", ")
+            }
+        }
+    };
+}
+
+impl_sql_arg_tuple!(A:a, B:b);
+impl_sql_arg_tuple!(A:a, B:b, C:c);
+impl_sql_arg_tuple!(A:a, B:b, C:c, D:d);
+impl_sql_arg_tuple!(A:a, B:b, C:c, D:d, E:e);
+impl_sql_arg_tuple!(A:a, B:b, C:c, D:d, E:e, F:f);
+impl_sql_arg_tuple!(A:a, B:b, C:c, D:d, E:e, F:f, G:g);
+impl_sql_arg_tuple!(A:a, B:b, C:c, D:d, E:e, F:f, G:g, H:h);
+impl_sql_arg_tuple!(A:a, B:b, C:c, D:d, E:e, F:f, G:g, H:h, I:i);
+impl_sql_arg_tuple!(A:a, B:b, C:c, D:d, E:e, F:f, G:g, H:h, I:i, J:j);
+impl_sql_arg_tuple!(A:a, B:b, C:c, D:d, E:e, F:f, G:g, H:h, I:i, J:j, K:k);
+impl_sql_arg_tuple!(A:a, B:b, C:c, D:d, E:e, F:f, G:g, H:h, I:i, J:j, K:k, L:l);

@@ -19,7 +19,9 @@ pub trait Bind {
     /// # Ok(())
     /// # }
     /// ```
-    fn bind(&self, arg: &dyn SqlArg) -> String;
+    fn bind<S>(&self, arg: S) -> String
+    where
+        S: SqlArg;
 
     /// Cyclic bindings of values.
     ///
@@ -78,7 +80,9 @@ pub trait Bind {
     /// # Ok(())
     /// # }
     /// ```
-    fn bind_num(&self, num: u16, arg: &dyn SqlArg) -> String;
+    fn bind_num<S>(&self, num: u16, arg: S) -> String
+    where
+        S: SqlArg;
 
     /// Replace $1, $2, ... with elements of array.
     /// Escape the $ symbol with another $ symbol.
@@ -137,7 +141,9 @@ pub trait Bind {
     /// # Ok(())
     /// # }
     /// ```
-    fn bind_name(&self, name: &dyn ToString, arg: &dyn SqlArg) -> String;
+    fn bind_name<S>(&self, name: &dyn ToString, arg: S) -> String
+    where
+        S: SqlArg;
 
     /// Replace each :name: from map.
     /// Escape the : symbol with another : symbol.
@@ -163,7 +169,9 @@ pub trait Bind {
     /// # Ok(())
     /// # }
     /// ```
-    fn bind_names(&self, names: &dyn BindNames) -> String;
+    fn bind_names<'a, B>(&self, names: B) -> String
+    where
+        B: BindNames<'a>;
 }
 
 impl Bind for &str {
@@ -184,7 +192,10 @@ impl Bind for &str {
     /// # Ok(())
     /// # }
     /// ```
-    fn bind(&self, arg: &dyn SqlArg) -> String {
+    fn bind<S>(&self, arg: S) -> String
+    where
+        S: SqlArg,
+    {
         (*self).to_string().bind(arg)
     }
 
@@ -247,7 +258,10 @@ impl Bind for &str {
     /// # Ok(())
     /// # }
     /// ```
-    fn bind_num(&self, num: u16, arg: &dyn SqlArg) -> String {
+    fn bind_num<S>(&self, num: u16, arg: S) -> String
+    where
+        S: SqlArg,
+    {
         (*self).to_string().bind_num(num, arg)
     }
 
@@ -310,7 +324,10 @@ impl Bind for &str {
     /// # Ok(())
     /// # }
     /// ```
-    fn bind_name(&self, name: &dyn ToString, arg: &dyn SqlArg) -> String {
+    fn bind_name<S>(&self, name: &dyn ToString, arg: S) -> String
+    where
+        S: SqlArg,
+    {
         (*self).to_string().bind_name(name, arg)
     }
 
@@ -338,7 +355,10 @@ impl Bind for &str {
     /// # Ok(())
     /// # }
     /// ```
-    fn bind_names<'a>(&self, names: &dyn BindNames) -> String {
+    fn bind_names<'a, B>(&self, names: B) -> String
+    where
+        B: BindNames<'a>,
+    {
         (*self).to_string().bind_names(names)
     }
 }
@@ -361,7 +381,10 @@ impl Bind for String {
     /// # Ok(())
     /// # }
     /// ```
-    fn bind(&self, arg: &dyn SqlArg) -> String {
+    fn bind<S>(&self, arg: S) -> String
+    where
+        S: SqlArg,
+    {
         self.replacen('?', &arg.sql_arg(), 1)
     }
 
@@ -435,7 +458,10 @@ impl Bind for String {
     /// # Ok(())
     /// # }
     /// ```
-    fn bind_num(&self, num: u16, arg: &dyn SqlArg) -> String {
+    fn bind_num<S>(&self, num: u16, arg: S) -> String
+    where
+        S: SqlArg,
+    {
         let rep = format!("${}", &num);
         self.replace(&rep, &arg.sql_arg())
     }
@@ -541,7 +567,10 @@ impl Bind for String {
     /// # Ok(())
     /// # }
     /// ```
-    fn bind_name(&self, name: &dyn ToString, arg: &dyn SqlArg) -> String {
+    fn bind_name<S>(&self, name: &dyn ToString, arg: S) -> String
+    where
+        S: SqlArg,
+    {
         let rep = format!(":{}:", &name.to_string());
         self.replace(&rep, &arg.sql_arg())
     }
@@ -570,7 +599,10 @@ impl Bind for String {
     /// # Ok(())
     /// # }
     /// ```
-    fn bind_names<'a>(&self, names: &dyn BindNames) -> String {
+    fn bind_names<'a, B>(&self, names: B) -> String
+    where
+        B: BindNames<'a>,
+    {
         let mut res = String::new();
         let mut key = String::new();
         let mut wait_colon = false;
@@ -611,6 +643,12 @@ pub trait BindNames<'a> {
     fn names_map(&self) -> HashMap<&'a str, &dyn SqlArg>;
 }
 
+impl<'a> BindNames<'a> for &dyn BindNames<'a> {
+    fn names_map(&self) -> HashMap<&'a str, &dyn SqlArg> {
+        (*self).names_map()
+    }
+}
+
 impl<'a> BindNames<'a> for HashMap<&'a str, &dyn SqlArg> {
     fn names_map(&self) -> HashMap<&'a str, &dyn SqlArg> {
         self.to_owned()
@@ -624,6 +662,16 @@ impl<'a> BindNames<'a> for &HashMap<&'a str, &dyn SqlArg> {
 }
 
 impl<'a> BindNames<'a> for Vec<(&'a str, &dyn SqlArg)> {
+    fn names_map(&self) -> HashMap<&'a str, &dyn SqlArg> {
+        let mut map = HashMap::new();
+        for (k, v) in self.iter() {
+            map.insert(*k, *v);
+        }
+        map
+    }
+}
+
+impl<'a> BindNames<'a> for &Vec<(&'a str, &dyn SqlArg)> {
     fn names_map(&self) -> HashMap<&'a str, &dyn SqlArg> {
         let mut map = HashMap::new();
         for (k, v) in self.iter() {
@@ -762,7 +810,6 @@ mod tests {
 
         let foo = Some("foo");
         assert_eq!("fo'foo'o", &"fo?o".bind(&foo));
-
         Ok(())
     }
 }
