@@ -174,8 +174,6 @@ use anyhow::Result;
 pub struct SqlBuilder {
     statement: Statement,
     table: String,
-    join_natural: bool,
-    join_operator: JoinOperator,
     joins: Vec<String>,
     distinct: bool,
     fields: Vec<String>,
@@ -206,18 +204,6 @@ enum Statement {
     DeleteFrom,
 }
 
-/// Operator for JOIN
-#[derive(Clone)]
-enum JoinOperator {
-    Join,
-    LeftJoin,
-    LeftOuterJoin,
-    RightJoin,
-    RightOuterJoin,
-    InnerJoin,
-    CrossJoin,
-}
-
 #[derive(Clone)]
 enum OnConflictAction {
     DoNothing,
@@ -238,8 +224,6 @@ impl SqlBuilder {
         Self {
             statement: Statement::SelectFrom,
             table: String::new(),
-            join_natural: false,
-            join_operator: JoinOperator::Join,
             joins: Vec::new(),
             distinct: false,
             fields: Vec::new(),
@@ -417,30 +401,6 @@ impl SqlBuilder {
         }
     }
 
-    /// Use NATURAL JOIN
-    ///
-    /// ```
-    /// # use anyhow::Result;
-    /// use sql_builder::SqlBuilder;
-    ///
-    /// # fn main() -> Result<()> {
-    /// let sql = SqlBuilder::select_from("books")
-    ///     .field("title")
-    ///     .field("total")
-    ///     .natural()
-    ///     .join("orders")
-    ///     .sql()?;
-    ///
-    /// assert_eq!("SELECT title, total FROM books NATURAL JOIN orders;", &sql);
-    /// // add here                                ^^^^^^^
-    /// # Ok(())
-    /// # }
-    /// ```
-    pub fn natural(&mut self) -> &mut Self {
-        self.join_natural = true;
-        self
-    }
-
     /// Use LEFT JOIN
     ///
     /// ```
@@ -451,43 +411,19 @@ impl SqlBuilder {
     /// let sql = SqlBuilder::select_from("books")
     ///     .field("title")
     ///     .field("total")
-    ///     .natural()
-    ///     .left()
-    ///     .join("orders")
+    ///     .left_join("orders")
     ///     .sql()?;
     ///
-    /// assert_eq!("SELECT title, total FROM books NATURAL LEFT JOIN orders;", &sql);
-    /// // add here                                        ^^^^
+    /// assert_eq!("SELECT title, total FROM books LEFT JOIN orders;", &sql);
+    /// // add here                                ^^^^
     /// # Ok(())
     /// # }
     /// ```
-    pub fn left(&mut self) -> &mut Self {
-        self.join_operator = JoinOperator::LeftJoin;
-        self
-    }
+    pub fn left_join<S: ToString>(&mut self, table: S) -> &mut Self {
+        let mut text = String::from("LEFT JOIN ");
+        text.push_str(&table.to_string());
 
-    /// Use LEFT OUTER JOIN
-    ///
-    /// ```
-    /// # use anyhow::Result;
-    /// use sql_builder::SqlBuilder;
-    ///
-    /// # fn main() -> Result<()> {
-    /// let sql = SqlBuilder::select_from("books")
-    ///     .field("title")
-    ///     .field("total")
-    ///     .natural()
-    ///     .left_outer()
-    ///     .join("orders")
-    ///     .sql()?;
-    ///
-    /// assert_eq!("SELECT title, total FROM books NATURAL LEFT OUTER JOIN orders;", &sql);
-    /// // add here                                        ^^^^^^^^^^
-    /// # Ok(())
-    /// # }
-    /// ```
-    pub fn left_outer(&mut self) -> &mut Self {
-        self.join_operator = JoinOperator::LeftOuterJoin;
+        self.joins.push(text);
         self
     }
 
@@ -501,43 +437,19 @@ impl SqlBuilder {
     /// let sql = SqlBuilder::select_from("books")
     ///     .field("title")
     ///     .field("total")
-    ///     .natural()
-    ///     .right()
-    ///     .join("orders")
+    ///     .right_join("orders")
     ///     .sql()?;
     ///
-    /// assert_eq!("SELECT title, total FROM books NATURAL RIGHT JOIN orders;", &sql);
-    /// // add here                                        ^^^^^
+    /// assert_eq!("SELECT title, total FROM books RIGHT JOIN orders;", &sql);
+    /// // add here                                ^^^^^
     /// # Ok(())
     /// # }
     /// ```
-    pub fn right(&mut self) -> &mut Self {
-        self.join_operator = JoinOperator::RightJoin;
-        self
-    }
+    pub fn right_join<S: ToString>(&mut self, table: S) -> &mut Self {
+        let mut text = String::from("RIGHT JOIN ");
+        text.push_str(&table.to_string());
 
-    /// Use RIGHT OUTER JOIN
-    ///
-    /// ```
-    /// # use anyhow::Result;
-    /// use sql_builder::SqlBuilder;
-    ///
-    /// # fn main() -> Result<()> {
-    /// let sql = SqlBuilder::select_from("books")
-    ///     .field("title")
-    ///     .field("total")
-    ///     .natural()
-    ///     .right_outer()
-    ///     .join("orders")
-    ///     .sql()?;
-    ///
-    /// assert_eq!("SELECT title, total FROM books NATURAL RIGHT OUTER JOIN orders;", &sql);
-    /// // add here                                        ^^^^^^^^^^^
-    /// # Ok(())
-    /// # }
-    /// ```
-    pub fn right_outer(&mut self) -> &mut Self {
-        self.join_operator = JoinOperator::RightOuterJoin;
+        self.joins.push(text);
         self
     }
 
@@ -551,18 +463,19 @@ impl SqlBuilder {
     /// let sql = SqlBuilder::select_from("books")
     ///     .field("title")
     ///     .field("total")
-    ///     .natural()
-    ///     .inner()
-    ///     .join("orders")
+    ///     .inner_join("orders")
     ///     .sql()?;
     ///
-    /// assert_eq!("SELECT title, total FROM books NATURAL INNER JOIN orders;", &sql);
-    /// // add here                                        ^^^^^
+    /// assert_eq!("SELECT title, total FROM books INNER JOIN orders;", &sql);
+    /// // add here                                ^^^^^
     /// # Ok(())
     /// # }
     /// ```
-    pub fn inner(&mut self) -> &mut Self {
-        self.join_operator = JoinOperator::InnerJoin;
+    pub fn inner_join<S: ToString>(&mut self, table: S) -> &mut Self {
+        let mut text = String::from("INNER JOIN ");
+        text.push_str(&table.to_string());
+
+        self.joins.push(text);
         self
     }
 
@@ -576,18 +489,19 @@ impl SqlBuilder {
     /// let sql = SqlBuilder::select_from("books")
     ///     .field("title")
     ///     .field("total")
-    ///     .natural()
-    ///     .cross()
-    ///     .join("orders")
+    ///     .cross_join("orders")
     ///     .sql()?;
     ///
-    /// assert_eq!("SELECT title, total FROM books NATURAL CROSS JOIN orders;", &sql);
-    /// // add here                                        ^^^^^
+    /// assert_eq!("SELECT title, total FROM books CROSS JOIN orders;", &sql);
+    /// // add here                                ^^^^^
     /// # Ok(())
     /// # }
     /// ```
-    pub fn cross(&mut self) -> &mut Self {
-        self.join_operator = JoinOperator::CrossJoin;
+    pub fn cross_join<S: ToString>(&mut self, table: S) -> &mut Self {
+        let mut text = String::from("CROSS JOIN ");
+        text.push_str(&table.to_string());
+
+        self.joins.push(text);
         self
     }
 
@@ -602,38 +516,18 @@ impl SqlBuilder {
     /// let sql = SqlBuilder::select_from(name!("books"; "b"))
     ///     .field("b.title")
     ///     .field("s.total")
-    ///     .left()
     ///     .join(name!("shops"; "s"))
     ///     .on("b.id = s.book")
     ///     .sql()?;
     ///
-    /// assert_eq!("SELECT b.title, s.total FROM books AS b LEFT JOIN shops AS s ON b.id = s.book;", &sql);
-    /// // add                                                        ^^^^^^^^^^
-    /// // here                                                         table
+    /// assert_eq!("SELECT b.title, s.total FROM books AS b JOIN shops AS s ON b.id = s.book;", &sql);
+    /// // add                                              ^^^^^^^^^^
+    /// // here                                               table
     /// # Ok(())
     /// # }
     /// ```
     pub fn join<S: ToString>(&mut self, table: S) -> &mut Self {
-        let mut text = match &self.join_operator {
-            JoinOperator::Join if self.join_natural => "NATURAL JOIN ",
-            JoinOperator::Join => "JOIN ",
-            JoinOperator::LeftJoin if self.join_natural => "NATURAL LEFT JOIN ",
-            JoinOperator::LeftJoin => "LEFT JOIN ",
-            JoinOperator::LeftOuterJoin if self.join_natural => "NATURAL LEFT OUTER JOIN ",
-            JoinOperator::LeftOuterJoin => "LEFT OUTER JOIN ",
-            JoinOperator::RightJoin if self.join_natural => "NATURAL RIGHT JOIN ",
-            JoinOperator::RightJoin => "RIGHT JOIN ",
-            JoinOperator::RightOuterJoin if self.join_natural => "NATURAL RIGHT OUTER JOIN ",
-            JoinOperator::RightOuterJoin => "RIGHT OUTER JOIN ",
-            JoinOperator::InnerJoin if self.join_natural => "NATURAL INNER JOIN ",
-            JoinOperator::InnerJoin => "INNER JOIN ",
-            JoinOperator::CrossJoin if self.join_natural => "NATURAL CROSS JOIN ",
-            JoinOperator::CrossJoin => "CROSS JOIN ",
-        }
-        .to_string();
-
-        self.join_natural = false;
-
+        let mut text = String::from("JOIN ");
         text.push_str(&table.to_string());
 
         self.joins.push(text);
@@ -4475,27 +4369,25 @@ mod tests {
         let sql = SqlBuilder::select_from("books AS b")
             .field("b.title")
             .field("s.total")
-            .left_outer()
-            .join("shops AS s")
+            .left_join("shops AS s")
             .on("b.id = s.book")
             .sql()?;
 
         assert_eq!(
             &sql,
-            "SELECT b.title, s.total FROM books AS b LEFT OUTER JOIN shops AS s ON b.id = s.book;"
+            "SELECT b.title, s.total FROM books AS b LEFT JOIN shops AS s ON b.id = s.book;"
         );
 
         let sql = SqlBuilder::select_from("books AS b")
             .field("b.title")
             .field("s.total")
-            .left_outer()
-            .join("shops AS s")
+            .left_join("shops AS s")
             .on_eq("b.id", "s.book")
             .sql()?;
 
         assert_eq!(
             &sql,
-            "SELECT b.title, s.total FROM books AS b LEFT OUTER JOIN shops AS s ON b.id = s.book;"
+            "SELECT b.title, s.total FROM books AS b LEFT JOIN shops AS s ON b.id = s.book;"
         );
 
         Ok(())

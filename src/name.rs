@@ -12,8 +12,7 @@ use crate::{baquote, brquote, dquote, quote};
 /// let sql = SqlBuilder::select_from(name!("public", "BOOKS"; "b"))
 ///     .field(name!("b", "title"))
 ///     .field(name!("s", "total"))
-///     .left()
-///     .join(name!("shops"; "s"))
+///     .left_join(name!("shops"; "s"))
 ///     .on_eq(name!("b", "id"), name!("s", "book"))
 ///     .sql()?;
 ///
@@ -67,8 +66,7 @@ macro_rules! name {
 /// let sql = SqlBuilder::select_from(qname!("public", "BOOKS"; "b"))
 ///     .field(qname!("b", "title"))
 ///     .field(qname!("s", "total"))
-///     .left()
-///     .join(qname!("shops"; "s"))
+///     .left_join(qname!("shops"; "s"))
 ///     .on_eq(qname!("b", "id"), qname!("s", "book"))
 ///     .sql()?;
 ///
@@ -122,8 +120,7 @@ macro_rules! qname {
 /// let sql = SqlBuilder::select_from(baname!("public", "BOOKS"; "b"))
 ///     .field(baname!("b", "title"))
 ///     .field(baname!("s", "total"))
-///     .left()
-///     .join(baname!("shops"; "s"))
+///     .left_join(baname!("shops"; "s"))
 ///     .on_eq(baname!("b", "id"), baname!("s", "book"))
 ///     .sql()?;
 ///
@@ -177,8 +174,7 @@ macro_rules! baname {
 /// let sql = SqlBuilder::select_from(brname!("public", "BOOKS"; "b"))
 ///     .field(brname!("b", "title"))
 ///     .field(brname!("s", "total"))
-///     .left()
-///     .join(brname!("shops"; "s"))
+///     .left_join(brname!("shops"; "s"))
 ///     .on_eq(brname!("b", "id"), brname!("s", "book"))
 ///     .sql()?;
 ///
@@ -232,8 +228,7 @@ macro_rules! brname {
 /// let sql = SqlBuilder::select_from(dname!("public", "BOOKS"; "b"))
 ///     .field(dname!("b", "title"))
 ///     .field(dname!("s", "total"))
-///     .left()
-///     .join(dname!("shops"; "s"))
+///     .left_join(dname!("shops"; "s"))
 ///     .on_eq(dname!("b", "id"), dname!("s", "book"))
 ///     .sql()?;
 ///
@@ -286,8 +281,7 @@ macro_rules! dname {
 /// let sql = SqlBuilder::select_from(SqlName::new("public").add("BOOKS").alias("b").baquoted())
 ///     .field(SqlName::new("b").add("title").baquoted())
 ///     .field(SqlName::new("s").add("total").baquoted())
-///     .left()
-///     .join(SqlName::new("shops").alias("s").baquoted())
+///     .left_join(SqlName::new("shops").alias("s").baquoted())
 ///     .on_eq(SqlName::new("b").add("id").baquoted(), SqlName::new("s").add("book").baquoted())
 ///     .sql()?;
 ///
@@ -305,8 +299,7 @@ macro_rules! dname {
 /// let sql = SqlBuilder::select_from(baname!("public", "BOOKS"; "b"))
 ///     .field(baname!("b", "title"))
 ///     .field(baname!("s", "total"))
-///     .left()
-///     .join(baname!("shops"; "s"))
+///     .left_join(baname!("shops"; "s"))
 ///     .on_eq(baname!("b", "id"), baname!("s", "book"))
 ///     .sql()?;
 ///
