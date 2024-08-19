@@ -269,6 +269,15 @@ impl<T: SqlArg> SqlArg for &Vec<T> {
     }
 }
 
+impl<T: SqlArg> SqlArg for [T] {
+    fn sql_arg(&self) -> String {
+        self.iter()
+            .map(|v| v.sql_arg())
+            .collect::<Vec<_>>()
+            .join(", ")
+    }
+}
+
 impl<T: SqlArg> SqlArg for &[T] {
     fn sql_arg(&self) -> String {
         self.iter()
