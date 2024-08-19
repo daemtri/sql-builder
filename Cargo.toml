@@ -2,7 +2,13 @@
 name = "sql-builder"
 version = "4.0.0"
 description = "Simple SQL code generator."
-authors = ["perdumonocle <konstantin_1987@mail.ru>", "dvic <info@dvic.io>", "ezracelli", "ljoonal <toasterbot@ljoonal.xyz>"]
+authors = [
+    "perdumonocle <konstantin_1987@mail.ru>",
+    "dvic <info@dvic.io>",
+    "ezracelli",
+    "ljoonal <toasterbot@ljoonal.xyz>",
+    "daemtri <daemtri-molly@outlook.com>",
+]
 license = "MIT"
 edition = "2018"
 keywords = ["sql", "db", "database", "simple", "codegen"]

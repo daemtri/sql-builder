@@ -164,8 +164,6 @@ pub mod bind;
 pub mod error;
 pub mod name;
 pub mod prelude;
-#[path = "where-builder.rs"]
-pub mod where_builder;
 
 pub use crate::error::SqlBuilderError;
 pub use crate::name::SqlName;
@@ -220,7 +218,6 @@ enum JoinOperator {
     InnerJoin,
     CrossJoin,
 }
-
 
 #[derive(Clone)]
 enum OnConflictAction {
@@ -634,7 +631,7 @@ impl SqlBuilder {
             JoinOperator::CrossJoin if self.join_natural => "NATURAL CROSS JOIN ",
             JoinOperator::CrossJoin => "CROSS JOIN ",
         }
-            .to_string();
+        .to_string();
 
         self.join_natural = false;
 
@@ -956,9 +953,9 @@ impl SqlBuilder {
     /// # }
     /// ```
     pub fn count_as<S, T>(&mut self, field: S, name: T) -> &mut Self
-        where
-            S: ToString,
-            T: ToString,
+    where
+        S: ToString,
+        T: ToString,
     {
         self.fields.push(format!(
             "COUNT({}) AS {}",
@@ -986,9 +983,9 @@ impl SqlBuilder {
     /// # }
     /// ```
     pub fn set<S, T>(&mut self, field: S, value: T) -> &mut Self
-        where
-            S: ToString,
-            T: ToString,
+    where
+        S: ToString,
+        T: ToString,
     {
         let expr = format!("{} = {}", &field.to_string(), &value.to_string());
         self.sets.push(expr);
@@ -1014,9 +1011,9 @@ impl SqlBuilder {
     /// # }
     /// ```
     pub fn set_str<S, T>(&mut self, field: S, value: T) -> &mut Self
-        where
-            S: ToString,
-            T: ToString,
+    where
+        S: ToString,
+        T: ToString,
     {
         let expr = format!("{} = '{}'", &field.to_string(), &esc(&value.to_string()));
         self.sets.push(expr);
@@ -1240,9 +1237,9 @@ impl SqlBuilder {
     /// # }
     /// ```
     pub fn and_where_eq<S, T>(&mut self, field: S, value: T) -> &mut Self
-        where
-            S: ToString,
-            T: ToString,
+    where
+        S: ToString,
+        T: ToString,
     {
         // Checks
         let field = field.to_string();
@@ -1280,9 +1277,9 @@ impl SqlBuilder {
     /// # }
     /// ```
     pub fn and_where_ne<S, T>(&mut self, field: S, value: T) -> &mut Self
-        where
-            S: ToString,
-            T: ToString,
+    where
+        S: ToString,
+        T: ToString,
     {
         // Checks
         let field = field.to_string();
@@ -1321,9 +1318,9 @@ impl SqlBuilder {
     /// # }
     /// ```
     pub fn and_where_gt<S, T>(&mut self, field: S, value: T) -> &mut Self
-        where
-            S: ToString,
-            T: ToString,
+    where
+        S: ToString,
+        T: ToString,
     {
         // Checks
         let field = field.to_string();
@@ -1362,9 +1359,9 @@ impl SqlBuilder {
     /// # }
     /// ```
     pub fn and_where_ge<S, T>(&mut self, field: S, value: T) -> &mut Self
-        where
-            S: ToString,
-            T: ToString,
+    where
+        S: ToString,
+        T: ToString,
     {
         // Checks
         let field = field.to_string();
@@ -1403,9 +1400,9 @@ impl SqlBuilder {
     /// # }
     /// ```
     pub fn and_where_lt<S, T>(&mut self, field: S, value: T) -> &mut Self
-        where
-            S: ToString,
-            T: ToString,
+    where
+        S: ToString,
+        T: ToString,
     {
         // Checks
         let field = field.to_string();
@@ -1444,9 +1441,9 @@ impl SqlBuilder {
     /// # }
     /// ```
     pub fn and_where_le<S, T>(&mut self, field: S, value: T) -> &mut Self
-        where
-            S: ToString,
-            T: ToString,
+    where
+        S: ToString,
+        T: ToString,
     {
         // Checks
         let field = field.to_string();
@@ -1484,9 +1481,9 @@ impl SqlBuilder {
     /// # }
     /// ```
     pub fn and_where_like<S, T>(&mut self, field: S, mask: T) -> &mut Self
-        where
-            S: ToString,
-            T: ToString,
+    where
+        S: ToString,
+        T: ToString,
     {
         // Checks
         let field = field.to_string();
@@ -1521,9 +1518,9 @@ impl SqlBuilder {
     /// # }
     /// ```
     pub fn and_where_like_right<S, T>(&mut self, field: S, mask: T) -> &mut Self
-        where
-            S: ToString,
-            T: ToString,
+    where
+        S: ToString,
+        T: ToString,
     {
         // Checks
         let field = field.to_string();
@@ -1558,9 +1555,9 @@ impl SqlBuilder {
     /// # }
     /// ```
     pub fn and_where_like_left<S, T>(&mut self, field: S, mask: T) -> &mut Self
-        where
-            S: ToString,
-            T: ToString,
+    where
+        S: ToString,
+        T: ToString,
     {
         // Checks
         let field = field.to_string();
@@ -1595,9 +1592,9 @@ impl SqlBuilder {
     /// # }
     /// ```
     pub fn and_where_like_any<S, T>(&mut self, field: S, mask: T) -> &mut Self
-        where
-            S: ToString,
-            T: ToString,
+    where
+        S: ToString,
+        T: ToString,
     {
         // Checks
         let field = field.to_string();
@@ -1632,9 +1629,9 @@ impl SqlBuilder {
     /// # }
     /// ```
     pub fn and_where_not_like<S, T>(&mut self, field: S, mask: T) -> &mut Self
-        where
-            S: ToString,
-            T: ToString,
+    where
+        S: ToString,
+        T: ToString,
     {
         // Checks
         let field = field.to_string();
@@ -1673,9 +1670,9 @@ impl SqlBuilder {
     /// # }
     /// ```
     pub fn and_where_not_like_right<S, T>(&mut self, field: S, mask: T) -> &mut Self
-        where
-            S: ToString,
-            T: ToString,
+    where
+        S: ToString,
+        T: ToString,
     {
         // Checks
         let field = field.to_string();
@@ -1714,9 +1711,9 @@ impl SqlBuilder {
     /// # }
     /// ```
     pub fn and_where_not_like_left<S, T>(&mut self, field: S, mask: T) -> &mut Self
-        where
-            S: ToString,
-            T: ToString,
+    where
+        S: ToString,
+        T: ToString,
     {
         // Checks
         let field = field.to_string();
@@ -1755,9 +1752,9 @@ impl SqlBuilder {
     /// # }
     /// ```
     pub fn and_where_not_like_any<S, T>(&mut self, field: S, mask: T) -> &mut Self
-        where
-            S: ToString,
-            T: ToString,
+    where
+        S: ToString,
+        T: ToString,
     {
         // Checks
         let field = field.to_string();
@@ -1859,9 +1856,9 @@ impl SqlBuilder {
     /// # }
     /// ```
     pub fn and_where_in<S, T>(&mut self, field: S, list: &[T]) -> &mut Self
-        where
-            S: ToString,
-            T: ToString,
+    where
+        S: ToString,
+        T: ToString,
     {
         // Checks
         let field = field.to_string();
@@ -1906,9 +1903,9 @@ impl SqlBuilder {
     /// # }
     /// ```
     pub fn and_where_in_quoted<S, T>(&mut self, field: S, list: &[T]) -> &mut Self
-        where
-            S: ToString,
-            T: ToString,
+    where
+        S: ToString,
+        T: ToString,
     {
         // Checks
         let field = field.to_string();
@@ -1953,9 +1950,9 @@ impl SqlBuilder {
     /// # }
     /// ```
     pub fn and_where_not_in<S, T>(&mut self, field: S, list: &[T]) -> &mut Self
-        where
-            S: ToString,
-            T: ToString,
+    where
+        S: ToString,
+        T: ToString,
     {
         // Checks
         let field = field.to_string();
@@ -2000,9 +1997,9 @@ impl SqlBuilder {
     /// # }
     /// ```
     pub fn and_where_not_in_quoted<S, T>(&mut self, field: S, list: &[T]) -> &mut Self
-        where
-            S: ToString,
-            T: ToString,
+    where
+        S: ToString,
+        T: ToString,
     {
         // Checks
         let field = field.to_string();
@@ -2054,9 +2051,9 @@ impl SqlBuilder {
     /// # }
     /// ```
     pub fn and_where_in_query<S, T>(&mut self, field: S, query: T) -> &mut Self
-        where
-            S: ToString,
-            T: ToString,
+    where
+        S: ToString,
+        T: ToString,
     {
         // Checks
         let field = field.to_string();
@@ -2103,9 +2100,9 @@ impl SqlBuilder {
     /// # }
     /// ```
     pub fn and_where_not_in_query<S, T>(&mut self, field: S, query: T) -> &mut Self
-        where
-            S: ToString,
-            T: ToString,
+    where
+        S: ToString,
+        T: ToString,
     {
         // Checks
         let field = field.to_string();
@@ -2145,10 +2142,10 @@ impl SqlBuilder {
     /// # }
     /// ```
     pub fn and_where_between<S, T, U>(&mut self, field: S, min: T, max: U) -> &mut Self
-        where
-            S: ToString,
-            T: ToString,
-            U: ToString,
+    where
+        S: ToString,
+        T: ToString,
+        U: ToString,
     {
         // Checks
         let field = field.to_string();
@@ -2193,10 +2190,10 @@ impl SqlBuilder {
     /// # }
     /// ```
     pub fn and_where_not_between<S, T, U>(&mut self, field: S, min: T, max: U) -> &mut Self
-        where
-            S: ToString,
-            T: ToString,
-            U: ToString,
+    where
+        S: ToString,
+        T: ToString,
+        U: ToString,
     {
         // Checks
         let field = field.to_string();
@@ -2278,9 +2275,9 @@ impl SqlBuilder {
     /// # }
     /// ```
     pub fn or_where_eq<S, T>(&mut self, field: S, value: T) -> &mut Self
-        where
-            S: ToString,
-            T: ToString,
+    where
+        S: ToString,
+        T: ToString,
     {
         // Checks
         let field = field.to_string();
@@ -2319,9 +2316,9 @@ impl SqlBuilder {
     /// # }
     /// ```
     pub fn or_where_ne<S, T>(&mut self, field: S, value: T) -> &mut Self
-        where
-            S: ToString,
-            T: ToString,
+    where
+        S: ToString,
+        T: ToString,
     {
         // Checks
         let field = field.to_string();
@@ -2361,9 +2358,9 @@ impl SqlBuilder {
     /// # }
     /// ```
     pub fn or_where_gt<S, T>(&mut self, field: S, value: T) -> &mut Self
-        where
-            S: ToString,
-            T: ToString,
+    where
+        S: ToString,
+        T: ToString,
     {
         // Checks
         let field = field.to_string();
@@ -2403,9 +2400,9 @@ impl SqlBuilder {
     /// # }
     /// ```
     pub fn or_where_ge<S, T>(&mut self, field: S, value: T) -> &mut Self
-        where
-            S: ToString,
-            T: ToString,
+    where
+        S: ToString,
+        T: ToString,
     {
         // Checks
         let field = field.to_string();
@@ -2445,9 +2442,9 @@ impl SqlBuilder {
     /// # }
     /// ```
     pub fn or_where_lt<S, T>(&mut self, field: S, value: T) -> &mut Self
-        where
-            S: ToString,
-            T: ToString,
+    where
+        S: ToString,
+        T: ToString,
     {
         // Checks
         let field = field.to_string();
@@ -2487,9 +2484,9 @@ impl SqlBuilder {
     /// # }
     /// ```
     pub fn or_where_le<S, T>(&mut self, field: S, value: T) -> &mut Self
-        where
-            S: ToString,
-            T: ToString,
+    where
+        S: ToString,
+        T: ToString,
     {
         // Checks
         let field = field.to_string();
@@ -2528,9 +2525,9 @@ impl SqlBuilder {
     /// # }
     /// ```
     pub fn or_where_like<S, T>(&mut self, field: S, mask: T) -> &mut Self
-        where
-            S: ToString,
-            T: ToString,
+    where
+        S: ToString,
+        T: ToString,
     {
         // Checks
         let field = field.to_string();
@@ -2566,9 +2563,9 @@ impl SqlBuilder {
     /// # }
     /// ```
     pub fn or_where_like_right<S, T>(&mut self, field: S, mask: T) -> &mut Self
-        where
-            S: ToString,
-            T: ToString,
+    where
+        S: ToString,
+        T: ToString,
     {
         // Checks
         let field = field.to_string();
@@ -2604,9 +2601,9 @@ impl SqlBuilder {
     /// # }
     /// ```
     pub fn or_where_like_left<S, T>(&mut self, field: S, mask: T) -> &mut Self
-        where
-            S: ToString,
-            T: ToString,
+    where
+        S: ToString,
+        T: ToString,
     {
         // Checks
         let field = field.to_string();
@@ -2642,9 +2639,9 @@ impl SqlBuilder {
     /// # }
     /// ```
     pub fn or_where_like_any<S, T>(&mut self, field: S, mask: T) -> &mut Self
-        where
-            S: ToString,
-            T: ToString,
+    where
+        S: ToString,
+        T: ToString,
     {
         // Checks
         let field = field.to_string();
@@ -2680,9 +2677,9 @@ impl SqlBuilder {
     /// # }
     /// ```
     pub fn or_where_not_like<S, T>(&mut self, field: S, mask: T) -> &mut Self
-        where
-            S: ToString,
-            T: ToString,
+    where
+        S: ToString,
+        T: ToString,
     {
         // Checks
         let field = field.to_string();
@@ -2722,9 +2719,9 @@ impl SqlBuilder {
     /// # }
     /// ```
     pub fn or_where_not_like_right<S, T>(&mut self, field: S, mask: T) -> &mut Self
-        where
-            S: ToString,
-            T: ToString,
+    where
+        S: ToString,
+        T: ToString,
     {
         // Checks
         let field = field.to_string();
@@ -2764,9 +2761,9 @@ impl SqlBuilder {
     /// # }
     /// ```
     pub fn or_where_not_like_left<S, T>(&mut self, field: S, mask: T) -> &mut Self
-        where
-            S: ToString,
-            T: ToString,
+    where
+        S: ToString,
+        T: ToString,
     {
         // Checks
         let field = field.to_string();
@@ -2806,9 +2803,9 @@ impl SqlBuilder {
     /// # }
     /// ```
     pub fn or_where_not_like_any<S, T>(&mut self, field: S, mask: T) -> &mut Self
-        where
-            S: ToString,
-            T: ToString,
+    where
+        S: ToString,
+        T: ToString,
     {
         // Checks
         let field = field.to_string();
@@ -2913,9 +2910,9 @@ impl SqlBuilder {
     /// # }
     /// ```
     pub fn or_where_in<S, T>(&mut self, field: S, list: &[T]) -> &mut Self
-        where
-            S: ToString,
-            T: ToString,
+    where
+        S: ToString,
+        T: ToString,
     {
         // Checks
         let field = field.to_string();
@@ -2961,9 +2958,9 @@ impl SqlBuilder {
     /// # }
     /// ```
     pub fn or_where_in_quoted<S, T>(&mut self, field: S, list: &[T]) -> &mut Self
-        where
-            S: ToString,
-            T: ToString,
+    where
+        S: ToString,
+        T: ToString,
     {
         // Checks
         let field = field.to_string();
@@ -3009,9 +3006,9 @@ impl SqlBuilder {
     /// # }
     /// ```
     pub fn or_where_not_in<S, T>(&mut self, field: S, list: &[T]) -> &mut Self
-        where
-            S: ToString,
-            T: ToString,
+    where
+        S: ToString,
+        T: ToString,
     {
         // Checks
         let field = field.to_string();
@@ -3057,9 +3054,9 @@ impl SqlBuilder {
     /// # }
     /// ```
     pub fn or_where_not_in_quoted<S, T>(&mut self, field: S, list: &[T]) -> &mut Self
-        where
-            S: ToString,
-            T: ToString,
+    where
+        S: ToString,
+        T: ToString,
     {
         // Checks
         let field = field.to_string();
@@ -3112,9 +3109,9 @@ impl SqlBuilder {
     /// # }
     /// ```
     pub fn or_where_in_query<S, T>(&mut self, field: S, query: T) -> &mut Self
-        where
-            S: ToString,
-            T: ToString,
+    where
+        S: ToString,
+        T: ToString,
     {
         // Checks
         let field = field.to_string();
@@ -3162,9 +3159,9 @@ impl SqlBuilder {
     /// # }
     /// ```
     pub fn or_where_not_in_query<S, T>(&mut self, field: S, query: T) -> &mut Self
-        where
-            S: ToString,
-            T: ToString,
+    where
+        S: ToString,
+        T: ToString,
     {
         // Checks
         let field = field.to_string();
@@ -3205,10 +3202,10 @@ impl SqlBuilder {
     /// # }
     /// ```
     pub fn or_where_between<S, T, U>(&mut self, field: S, min: T, max: U) -> &mut Self
-        where
-            S: ToString,
-            T: ToString,
-            U: ToString,
+    where
+        S: ToString,
+        T: ToString,
+        U: ToString,
     {
         // Checks
         let field = field.to_string();
@@ -3254,10 +3251,10 @@ impl SqlBuilder {
     /// # }
     /// ```
     pub fn or_where_not_between<S, T, U>(&mut self, field: S, min: T, max: U) -> &mut Self
-        where
-            S: ToString,
-            T: ToString,
-            U: ToString,
+    where
+        S: ToString,
+        T: ToString,
+        U: ToString,
     {
         // Checks
         let field = field.to_string();
@@ -3760,9 +3757,18 @@ impl SqlBuilder {
                     match on_conflict_action {
                         OnConflictAction::DoNothing => " ON CONFLICT DO NOTHING ".to_string(),
                         OnConflictAction::DoUpdate => {
-                            if let (Some(on_conflict_key), on_conflict_sets) = (&self.on_conflict_key, &self.on_conflict_sets) {
-                                let on_conflict_sets = on_conflict_sets.iter().map(|key| { format!("{key} = EXCLUDED.{key}", key = key) }).collect::<Vec<String>>().join(", ");
-                                format!(" ON CONFLICT ({}) DO UPDATE SET {}", on_conflict_key, on_conflict_sets)
+                            if let (Some(on_conflict_key), on_conflict_sets) =
+                                (&self.on_conflict_key, &self.on_conflict_sets)
+                            {
+                                let on_conflict_sets = on_conflict_sets
+                                    .iter()
+                                    .map(|key| format!("{key} = EXCLUDED.{key}", key = key))
+                                    .collect::<Vec<String>>()
+                                    .join(", ");
+                                format!(
+                                    " ON CONFLICT ({}) DO UPDATE SET {}",
+                                    on_conflict_key, on_conflict_sets
+                                )
                             } else {
                                 return Err(SqlBuilderError::NoValues.into());
                             }
