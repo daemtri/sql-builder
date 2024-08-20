@@ -30,7 +30,7 @@ macro_rules! name {
         {
             SqlName::new( $n )
             $(
-                .add( $x )
+                .sub( $x )
             )*
             .safe()
         }
@@ -44,7 +44,7 @@ macro_rules! name {
         {
             SqlName::new( $n )
             $(
-                .add( $x )
+                .sub( $x )
             )*
             .alias( $a )
             .safe()
@@ -83,7 +83,7 @@ macro_rules! qname {
         {
             SqlName::new( $n )
             $(
-                .add( $x )
+                .sub( $x )
             )*
             .quoted()
         }
@@ -97,7 +97,7 @@ macro_rules! qname {
         {
             SqlName::new( $n )
             $(
-                .add( $x )
+                .sub( $x )
             )*
             .alias( $a )
             .quoted()
@@ -136,7 +136,7 @@ macro_rules! baname {
         {
             SqlName::new( $n )
             $(
-                .add( $x )
+                .sub( $x )
             )*
             .baquoted()
         }
@@ -150,7 +150,7 @@ macro_rules! baname {
         {
             SqlName::new( $n )
             $(
-                .add( $x )
+                .sub( $x )
             )*
             .alias( $a )
             .baquoted()
@@ -189,7 +189,7 @@ macro_rules! brname {
         {
             SqlName::new( $n )
             $(
-                .add( $x )
+                .sub( $x )
             )*
             .brquoted()
         }
@@ -203,7 +203,7 @@ macro_rules! brname {
         {
             SqlName::new( $n )
             $(
-                .add( $x )
+                .sub( $x )
             )*
             .alias( $a )
             .brquoted()
@@ -242,7 +242,7 @@ macro_rules! dname {
         {
             SqlName::new( $n )
             $(
-                .add( $x )
+                .sub( $x )
             )*
             .dquoted()
         }
@@ -256,7 +256,7 @@ macro_rules! dname {
         {
             SqlName::new( $n )
             $(
-                .add( $x )
+                .sub( $x )
             )*
             .alias( $a )
             .dquoted()
@@ -273,10 +273,10 @@ macro_rules! dname {
 /// use sql_builder::{SqlBuilder, name::{name,SqlName}, bind::Bind};
 ///
 /// # fn main() -> Result<()> {
-/// let sql = SqlBuilder::select_from(name("public").add("BOOKS").alias("b").baquoted())
-///     .field(name("b").add("title").baquoted())
-///     .field(name("s").add("total").baquoted())
-///     .left_join("? ON ? = ?".bind(name("shops").alias("s").baquoted()).bind(name("b").add("id").baquoted()).bind(SqlName::new("s").add("book").baquoted()))
+/// let sql = SqlBuilder::select_from(name("public").sub("BOOKS").alias("b").baquoted())
+///     .field(name("b").sub("title").baquoted())
+///     .field(name("s").sub("total").baquoted())
+///     .left_join("? ON ? = ?".bind(name("shops").alias("s").baquoted()).bind(name("b").sub("id").baquoted()).bind(SqlName::new("s").sub("book").baquoted()))
 ///     .sql()?;
 ///
 /// assert_eq!("SELECT `b`.`title`, `s`.`total` FROM `public`.`BOOKS` AS b LEFT JOIN `shops` AS s ON `b`.`id` = `s`.`book`;", &sql);
@@ -332,7 +332,7 @@ impl SqlName {
     }
 
     /// Add additional part of identifier
-    pub fn add<S: ToString>(&mut self, name: S) -> &mut Self {
+    pub fn sub<S: ToString>(&mut self, name: S) -> &mut Self {
         self.parts.push(name.to_string());
         self
     }
@@ -519,7 +519,7 @@ mod tests {
         assert_eq!(&name, "'some ''awesome'' name' AS `awesome name`");
 
         let name = SqlName::new("some 'awesome' name")
-            .add("sub")
+            .sub("sub")
             .alias("awesome name")
             .quoted()
             .to_string();
@@ -546,7 +546,7 @@ mod tests {
         assert_eq!(&name, "`safe_name` AS sn");
 
         let name = SqlName::new("safe_name")
-            .add("sub")
+            .sub("sub")
             .alias("sn")
             .baquoted()
             .to_string();
@@ -573,7 +573,7 @@ mod tests {
         assert_eq!(&name, "[safe_name] AS sn");
 
         let name = SqlName::new("safe_name")
-            .add("sub")
+            .sub("sub")
             .alias("sn")
             .brquoted()
             .to_string();
@@ -600,7 +600,7 @@ mod tests {
         assert_eq!(&name, "\"safe_name\" AS sn");
 
         let name = SqlName::new("safe_name")
-            .add("sub")
+            .sub("sub")
             .alias("sn")
             .dquoted()
             .to_string();
