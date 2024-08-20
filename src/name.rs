@@ -1,4 +1,4 @@
-use crate::{baquote, brquote, dquote, quote};
+use crate::{arg::SqlArg, baquote, brquote, dquote, quote};
 
 /// Make safe name of identifier if it contains unsafe characters.
 ///
@@ -12,8 +12,7 @@ use crate::{baquote, brquote, dquote, quote};
 /// let sql = SqlBuilder::select_from(name!("public", "BOOKS"; "b"))
 ///     .field(name!("b", "title"))
 ///     .field(name!("s", "total"))
-///     .left_join(name!("shops"; "s"))
-///     .on_eq(name!("b", "id"), name!("s", "book"))
+///     .left_join("shops AS s ON b.id = s.book")
 ///     .sql()?;
 ///
 /// assert_eq!("SELECT b.title, s.total FROM `public`.`BOOKS` AS b LEFT JOIN shops AS s ON b.id = s.book;", &sql);
@@ -66,8 +65,7 @@ macro_rules! name {
 /// let sql = SqlBuilder::select_from(qname!("public", "BOOKS"; "b"))
 ///     .field(qname!("b", "title"))
 ///     .field(qname!("s", "total"))
-///     .left_join(qname!("shops"; "s"))
-///     .on_eq(qname!("b", "id"), qname!("s", "book"))
+///     .left_join("'shops' AS s ON 'b'.'id' = 's'.'book'")
 ///     .sql()?;
 ///
 /// assert_eq!("SELECT 'b'.'title', 's'.'total' FROM 'public'.'BOOKS' AS b LEFT JOIN 'shops' AS s ON 'b'.'id' = 's'.'book';", &sql);
@@ -120,8 +118,7 @@ macro_rules! qname {
 /// let sql = SqlBuilder::select_from(baname!("public", "BOOKS"; "b"))
 ///     .field(baname!("b", "title"))
 ///     .field(baname!("s", "total"))
-///     .left_join(baname!("shops"; "s"))
-///     .on_eq(baname!("b", "id"), baname!("s", "book"))
+///     .left_join("`shops` AS s ON `b`.`id` = `s`.`book`")
 ///     .sql()?;
 ///
 /// assert_eq!("SELECT `b`.`title`, `s`.`total` FROM `public`.`BOOKS` AS b LEFT JOIN `shops` AS s ON `b`.`id` = `s`.`book`;", &sql);
@@ -174,8 +171,7 @@ macro_rules! baname {
 /// let sql = SqlBuilder::select_from(brname!("public", "BOOKS"; "b"))
 ///     .field(brname!("b", "title"))
 ///     .field(brname!("s", "total"))
-///     .left_join(brname!("shops"; "s"))
-///     .on_eq(brname!("b", "id"), brname!("s", "book"))
+///     .left_join("[shops] AS s ON [b].[id] = [s].[book]")
 ///     .sql()?;
 ///
 /// assert_eq!("SELECT [b].[title], [s].[total] FROM [public].[BOOKS] AS b LEFT JOIN [shops] AS s ON [b].[id] = [s].[book];", &sql);
@@ -228,8 +224,7 @@ macro_rules! brname {
 /// let sql = SqlBuilder::select_from(dname!("public", "BOOKS"; "b"))
 ///     .field(dname!("b", "title"))
 ///     .field(dname!("s", "total"))
-///     .left_join(dname!("shops"; "s"))
-///     .on_eq(dname!("b", "id"), dname!("s", "book"))
+///     .left_join(r#""shops" AS s ON "b"."id" = "s"."book""#)
 ///     .sql()?;
 ///
 /// assert_eq!("SELECT \"b\".\"title\", \"s\".\"total\" FROM \"public\".\"BOOKS\" AS b LEFT JOIN \"shops\" AS s ON \"b\".\"id\" = \"s\".\"book\";", &sql);
@@ -275,14 +270,13 @@ macro_rules! dname {
 /// ```
 /// #[macro_use] extern crate sql_builder;
 /// # use anyhow::Result;
-/// use sql_builder::{SqlBuilder, SqlName};
+/// use sql_builder::{SqlBuilder, name::{name,SqlName}, bind::Bind};
 ///
 /// # fn main() -> Result<()> {
-/// let sql = SqlBuilder::select_from(SqlName::new("public").add("BOOKS").alias("b").baquoted())
-///     .field(SqlName::new("b").add("title").baquoted())
-///     .field(SqlName::new("s").add("total").baquoted())
-///     .left_join(SqlName::new("shops").alias("s").baquoted())
-///     .on_eq(SqlName::new("b").add("id").baquoted(), SqlName::new("s").add("book").baquoted())
+/// let sql = SqlBuilder::select_from(name("public").add("BOOKS").alias("b").baquoted())
+///     .field(name("b").add("title").baquoted())
+///     .field(name("s").add("total").baquoted())
+///     .left_join("? ON ? = ?".bind(name("shops").alias("s").baquoted()).bind(name("b").add("id").baquoted()).bind(SqlName::new("s").add("book").baquoted()))
 ///     .sql()?;
 ///
 /// assert_eq!("SELECT `b`.`title`, `s`.`total` FROM `public`.`BOOKS` AS b LEFT JOIN `shops` AS s ON `b`.`id` = `s`.`book`;", &sql);
@@ -299,8 +293,7 @@ macro_rules! dname {
 /// let sql = SqlBuilder::select_from(baname!("public", "BOOKS"; "b"))
 ///     .field(baname!("b", "title"))
 ///     .field(baname!("s", "total"))
-///     .left_join(baname!("shops"; "s"))
-///     .on_eq(baname!("b", "id"), baname!("s", "book"))
+///     .left_join("`shops` AS s ON `b`.`id` = `s`.`book`")
 ///     .sql()?;
 ///
 /// assert_eq!("SELECT `b`.`title`, `s`.`total` FROM `public`.`BOOKS` AS b LEFT JOIN `shops` AS s ON `b`.`id` = `s`.`book`;", &sql);
@@ -309,14 +302,30 @@ macro_rules! dname {
 /// ```
 #[derive(Clone)]
 pub struct SqlName {
+    quote_type: QuoteType,
     parts: Vec<String>,
     alias: Option<String>,
+}
+
+#[derive(Clone, Copy, Default)]
+pub enum QuoteType {
+    #[default]
+    None,
+    Single,
+    Double,
+    Backtick,
+    Bracket,
+}
+
+pub fn name(name: &str) -> SqlName {
+    SqlName::new(name)
 }
 
 impl SqlName {
     /// Name of identifier
     pub fn new<S: ToString>(name: S) -> Self {
         Self {
+            quote_type: QuoteType::None,
             parts: vec![name.to_string()],
             alias: None,
         }
@@ -335,53 +344,33 @@ impl SqlName {
     }
 
     /// Make safe identifier
-    pub fn safe(&self) -> String {
-        let safe_name = self.make_safe_parts().join(".");
-        self.join_with_alias(safe_name)
+    pub fn safe(&mut self) -> &Self {
+        self.quote_type = QuoteType::None;
+        self
     }
 
     /// Make quoted identifier
-    pub fn quoted(&self) -> String {
-        let safe_name = self
-            .parts
-            .iter()
-            .map(quote)
-            .collect::<Vec<String>>()
-            .join(".");
-        self.join_with_alias(safe_name)
+    pub fn quoted(&mut self) -> &Self {
+        self.quote_type = QuoteType::Single;
+        self
     }
 
     /// Make backquoted identifier
-    pub fn baquoted(&self) -> String {
-        let safe_name = self
-            .parts
-            .iter()
-            .map(baquote)
-            .collect::<Vec<String>>()
-            .join(".");
-        self.join_with_alias(safe_name)
+    pub fn baquoted(&mut self) -> &Self {
+        self.quote_type = QuoteType::Backtick;
+        self
     }
 
     /// Make bracket-quoted identifier
-    pub fn brquoted(&self) -> String {
-        let safe_name = self
-            .parts
-            .iter()
-            .map(brquote)
-            .collect::<Vec<String>>()
-            .join(".");
-        self.join_with_alias(safe_name)
+    pub fn brquoted(&mut self) -> &Self {
+        self.quote_type = QuoteType::Bracket;
+        self
     }
 
     /// Make double quoted identifier
-    pub fn dquoted(&self) -> String {
-        let safe_name = self
-            .parts
-            .iter()
-            .map(dquote)
-            .collect::<Vec<String>>()
-            .join(".");
-        self.join_with_alias(safe_name)
+    pub fn dquoted(&mut self) -> &Self {
+        self.quote_type = QuoteType::Double;
+        self
     }
 
     /// Join safe name with safe alias
@@ -425,6 +414,60 @@ impl SqlName {
     }
 }
 
+impl SqlArg for SqlName {
+    fn sql_arg(&self) -> String {
+        match self.quote_type {
+            QuoteType::None => self.join_with_alias(self.make_safe_parts().join(".")),
+            QuoteType::Single => self.join_with_alias(
+                self.parts
+                    .iter()
+                    .map(quote)
+                    .collect::<Vec<String>>()
+                    .join("."),
+            ),
+            QuoteType::Double => self.join_with_alias(
+                self.parts
+                    .iter()
+                    .map(dquote)
+                    .collect::<Vec<String>>()
+                    .join("."),
+            ),
+            QuoteType::Backtick => self.join_with_alias(
+                self.parts
+                    .iter()
+                    .map(baquote)
+                    .collect::<Vec<String>>()
+                    .join("."),
+            ),
+            QuoteType::Bracket => self.join_with_alias(
+                self.parts
+                    .iter()
+                    .map(brquote)
+                    .collect::<Vec<String>>()
+                    .join("."),
+            ),
+        }
+    }
+}
+
+impl SqlArg for &SqlName {
+    fn sql_arg(&self) -> String {
+        (*self).sql_arg()
+    }
+}
+
+impl ToString for SqlName {
+    fn to_string(&self) -> String {
+        self.sql_arg()
+    }
+}
+
+impl ToString for &SqlName {
+    fn to_string(&self) -> String {
+        self.sql_arg()
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -432,16 +475,16 @@ mod tests {
 
     #[test]
     fn test_simple_name() -> Result<()> {
-        let name = SqlName::new("safe_name").safe();
+        let name = SqlName::new("safe_name").safe().to_string();
         assert_eq!(&name, "safe_name");
 
-        let name = SqlName::new("safe_name").alias("sn").safe();
+        let name = SqlName::new("safe_name").alias("sn").safe().to_string();
         assert_eq!(&name, "safe_name AS sn");
 
-        let name = name!("safe_name");
+        let name = name!("safe_name").to_string();
         assert_eq!(&name, "safe_name");
 
-        let name = name!("safe_name"; "sn");
+        let name = name!("safe_name"; "sn").to_string();
         assert_eq!(&name, "safe_name AS sn");
 
         Ok(())
@@ -449,16 +492,16 @@ mod tests {
 
     #[test]
     fn test_spaced_name() -> Result<()> {
-        let name = SqlName::new("spaced name").safe();
+        let name = SqlName::new("spaced name").safe().to_string();
         assert_eq!(&name, "`spaced name`");
 
-        let name = SqlName::new("spaced name").alias("s n").safe();
+        let name = SqlName::new("spaced name").alias("s n").safe().to_string();
         assert_eq!(&name, "`spaced name` AS `s n`");
 
-        let name = name!("spaced name");
+        let name = name!("spaced name").to_string();
         assert_eq!(&name, "`spaced name`");
 
-        let name = name!("spaced name"; "s n");
+        let name = name!("spaced name"; "s n").to_string();
         assert_eq!(&name, "`spaced name` AS `s n`");
 
         Ok(())
@@ -466,27 +509,29 @@ mod tests {
 
     #[test]
     fn test_quoted_name() -> Result<()> {
-        let name = SqlName::new("some 'awesome' name").quoted();
+        let name = SqlName::new("some 'awesome' name").quoted().to_string();
         assert_eq!(&name, "'some ''awesome'' name'");
 
         let name = SqlName::new("some 'awesome' name")
             .alias("awesome name")
-            .quoted();
+            .quoted()
+            .to_string();
         assert_eq!(&name, "'some ''awesome'' name' AS `awesome name`");
 
         let name = SqlName::new("some 'awesome' name")
             .add("sub")
             .alias("awesome name")
-            .quoted();
+            .quoted()
+            .to_string();
         assert_eq!(&name, "'some ''awesome'' name'.'sub' AS `awesome name`");
 
-        let name = qname!("some 'awesome' name");
+        let name = qname!("some 'awesome' name").to_string();
         assert_eq!(&name, "'some ''awesome'' name'");
 
-        let name = qname!("some 'awesome' name"; "awesome name");
+        let name = qname!("some 'awesome' name"; "awesome name").to_string();
         assert_eq!(&name, "'some ''awesome'' name' AS `awesome name`");
 
-        let name = qname!("some 'awesome' name", "sub"; "awesome name");
+        let name = qname!("some 'awesome' name", "sub"; "awesome name").to_string();
         assert_eq!(&name, "'some ''awesome'' name'.'sub' AS `awesome name`");
 
         Ok(())
@@ -494,22 +539,26 @@ mod tests {
 
     #[test]
     fn test_baquoted_name() -> Result<()> {
-        let name = SqlName::new("safe_name").baquoted();
+        let name = SqlName::new("safe_name").baquoted().to_string();
         assert_eq!(&name, "`safe_name`");
 
-        let name = SqlName::new("safe_name").alias("sn").baquoted();
+        let name = SqlName::new("safe_name").alias("sn").baquoted().to_string();
         assert_eq!(&name, "`safe_name` AS sn");
 
-        let name = SqlName::new("safe_name").add("sub").alias("sn").baquoted();
+        let name = SqlName::new("safe_name")
+            .add("sub")
+            .alias("sn")
+            .baquoted()
+            .to_string();
         assert_eq!(&name, "`safe_name`.`sub` AS sn");
 
-        let name = baname!("safe_name");
+        let name = baname!("safe_name").to_string();
         assert_eq!(&name, "`safe_name`");
 
-        let name = baname!("safe_name"; "sn");
+        let name = baname!("safe_name"; "sn").to_string();
         assert_eq!(&name, "`safe_name` AS sn");
 
-        let name = baname!("safe_name", "sub"; "sn");
+        let name = baname!("safe_name", "sub"; "sn").to_string();
         assert_eq!(&name, "`safe_name`.`sub` AS sn");
 
         Ok(())
@@ -517,22 +566,26 @@ mod tests {
 
     #[test]
     fn test_brquoted_name() -> Result<()> {
-        let name = SqlName::new("safe_name").brquoted();
+        let name = SqlName::new("safe_name").brquoted().to_string();
         assert_eq!(&name, "[safe_name]");
 
-        let name = SqlName::new("safe_name").alias("sn").brquoted();
+        let name = SqlName::new("safe_name").alias("sn").brquoted().to_string();
         assert_eq!(&name, "[safe_name] AS sn");
 
-        let name = SqlName::new("safe_name").add("sub").alias("sn").brquoted();
+        let name = SqlName::new("safe_name")
+            .add("sub")
+            .alias("sn")
+            .brquoted()
+            .to_string();
         assert_eq!(&name, "[safe_name].[sub] AS sn");
 
-        let name = brname!("safe_name");
+        let name = brname!("safe_name").to_string();
         assert_eq!(&name, "[safe_name]");
 
-        let name = brname!("safe_name"; "sn");
+        let name = brname!("safe_name"; "sn").to_string();
         assert_eq!(&name, "[safe_name] AS sn");
 
-        let name = brname!("safe_name", "sub"; "sn");
+        let name = brname!("safe_name", "sub"; "sn").to_string();
         assert_eq!(&name, "[safe_name].[sub] AS sn");
 
         Ok(())
@@ -540,22 +593,26 @@ mod tests {
 
     #[test]
     fn test_dquoted_name() -> Result<()> {
-        let name = SqlName::new("safe_name").dquoted();
+        let name = SqlName::new("safe_name").dquoted().to_string();
         assert_eq!(&name, "\"safe_name\"");
 
-        let name = SqlName::new("safe_name").alias("sn").dquoted();
+        let name = SqlName::new("safe_name").alias("sn").dquoted().to_string();
         assert_eq!(&name, "\"safe_name\" AS sn");
 
-        let name = SqlName::new("safe_name").add("sub").alias("sn").dquoted();
+        let name = SqlName::new("safe_name")
+            .add("sub")
+            .alias("sn")
+            .dquoted()
+            .to_string();
         assert_eq!(&name, "\"safe_name\".\"sub\" AS sn");
 
-        let name = dname!("safe_name");
+        let name = dname!("safe_name").to_string();
         assert_eq!(&name, "\"safe_name\"");
 
-        let name = dname!("safe_name"; "sn");
+        let name = dname!("safe_name"; "sn").to_string();
         assert_eq!(&name, "\"safe_name\" AS sn");
 
-        let name = dname!("safe_name", "sub"; "sn");
+        let name = dname!("safe_name", "sub"; "sn").to_string();
         assert_eq!(&name, "\"safe_name\".\"sub\" AS sn");
 
         Ok(())

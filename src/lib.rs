@@ -510,14 +510,13 @@ impl SqlBuilder {
     /// ```
     /// #[macro_use] extern crate sql_builder;
     /// # use anyhow::Result;
-    /// use sql_builder::{SqlBuilder, SqlName};
+    /// use sql_builder::{SqlBuilder, SqlName, bind::Bind};
     ///
     /// # fn main() -> Result<()> {
     /// let sql = SqlBuilder::select_from(name!("books"; "b"))
     ///     .field("b.title")
     ///     .field("s.total")
-    ///     .join(name!("shops"; "s"))
-    ///     .on("b.id = s.book")
+    ///     .join("? ON b.id = s.book".bind(name!("shops"; "s")))
     ///     .sql()?;
     ///
     /// assert_eq!("SELECT b.title, s.total FROM books AS b JOIN shops AS s ON b.id = s.book;", &sql);
@@ -531,97 +530,6 @@ impl SqlBuilder {
         text.push_str(&table.to_string());
 
         self.joins.push(text);
-        self
-    }
-
-    /// Join constraint to the last JOIN part.
-    ///
-    /// ```
-    /// # use anyhow::Result;
-    /// use sql_builder::SqlBuilder;
-    ///
-    /// # fn main() -> Result<()> {
-    /// let sql = SqlBuilder::select_from("books AS b")
-    ///     .field("b.title")
-    ///     .field("s.total")
-    ///     .join("shops AS s")
-    ///     .on("b.id = s.book")
-    ///     .sql()?;
-    ///
-    /// assert_eq!("SELECT b.title, s.total FROM books AS b JOIN shops AS s ON b.id = s.book;", &sql);
-    /// // add                                                                 ^^^^^^^^^^^^^
-    /// // here                                                                 constraint
-    /// # Ok(())
-    /// # }
-    /// ```
-    pub fn on<S: ToString>(&mut self, constraint: S) -> &mut Self {
-        if let Some(last) = self.joins.last_mut() {
-            last.push_str(" ON ");
-            last.push_str(&constraint.to_string());
-        }
-        self
-    }
-
-    /// Join constraint to the last JOIN part.
-    ///
-    /// ```
-    /// # use anyhow::Result;
-    /// use sql_builder::SqlBuilder;
-    ///
-    /// # fn main() -> Result<()> {
-    /// let sql = SqlBuilder::select_from("books AS b")
-    ///     .field("b.title")
-    ///     .field("s.total")
-    ///     .join("shops AS s")
-    ///     .on_eq("b.id", "s.book")
-    ///     .sql()?;
-    ///
-    /// assert_eq!("SELECT b.title, s.total FROM books AS b JOIN shops AS s ON b.id = s.book;", &sql);
-    /// // add                                                                 ^^^^   ^^^^^^
-    /// // here                                                                 c1      c2
-    /// # Ok(())
-    /// # }
-    /// ```
-    pub fn on_eq<S: ToString, T: ToString>(&mut self, c1: S, c2: T) -> &mut Self {
-        if let Some(last) = self.joins.last_mut() {
-            last.push_str(" ON ");
-            last.push_str(&c1.to_string());
-            last.push_str(" = ");
-            last.push_str(&c2.to_string());
-        }
-        self
-    }
-
-    /// Join constraint to the last JOIN part.
-    ///
-    /// ```
-    /// # use anyhow::Result;
-    ///
-    /// use sql_builder::SqlBuilder;
-    ///
-    ///
-    /// # fn main() -> Result<()> {
-    /// let sql = SqlBuilder::select_from("books AS b")
-    ///     .field("b.title")
-    ///     .field("s.total")
-    ///     .join("shops AS s")
-    ///     .on_eq("b.id", "s.book")
-    ///     .and_eq("b.name", 1)
-    ///     .sql()?;
-    ///
-    /// assert_eq!("SELECT b.title, s.total FROM books AS b JOIN shops AS s ON b.id = s.book AND b.name = 1;", &sql);
-    /// // add                                                                                   ^^^^^^   ^
-    /// // here                                                                                  c1      c2
-    /// # Ok(())
-    /// # }
-    /// ```
-    pub fn and_eq<S: ToString, T: ToString>(&mut self, c1: S, c2: T) -> &mut Self {
-        if let Some(last) = self.joins.last_mut() {
-            last.push_str(" AND ");
-            last.push_str(&c1.to_string());
-            last.push_str(" = ");
-            last.push_str(&c2.to_string());
-        }
         self
     }
 
@@ -4369,8 +4277,7 @@ mod tests {
         let sql = SqlBuilder::select_from("books AS b")
             .field("b.title")
             .field("s.total")
-            .left_join("shops AS s")
-            .on("b.id = s.book")
+            .left_join("shops AS s ON b.id = s.book")
             .sql()?;
 
         assert_eq!(
@@ -4381,8 +4288,7 @@ mod tests {
         let sql = SqlBuilder::select_from("books AS b")
             .field("b.title")
             .field("s.total")
-            .left_join("shops AS s")
-            .on_eq("b.id", "s.book")
+            .left_join("shops AS s ON b.id = s.book")
             .sql()?;
 
         assert_eq!(
