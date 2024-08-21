@@ -325,45 +325,27 @@ impl_sql_arg_tuple!(A:a, B:b, C:c, D:d, E:e, F:f, G:g, H:h, I:i, J:j);
 impl_sql_arg_tuple!(A:a, B:b, C:c, D:d, E:e, F:f, G:g, H:h, I:i, J:j, K:k);
 impl_sql_arg_tuple!(A:a, B:b, C:c, D:d, E:e, F:f, G:g, H:h, I:i, J:j, K:k, L:l);
 
-macro_rules! impl_sql_arg_array {
-    ($len:expr) => {
-        impl<T: SqlArg> SqlArg for [T; $len] {
-            fn sql_arg(&self) -> String {
-                let res = self
-                    .iter()
-                    .map(|item| item.sql_arg())
-                    .collect::<Vec<_>>()
-                    .join(", ");
-                format!("({})", res)
-            }
-        }
-
-        impl<T: SqlArg> SqlArg for &[T; $len] {
-            fn sql_arg(&self) -> String {
-                let res = self
-                    .iter()
-                    .map(|item| item.sql_arg())
-                    .collect::<Vec<_>>()
-                    .join(", ");
-                format!("({})", res)
-            }
-        }
-    };
+impl<T: SqlArg, const N: usize> SqlArg for [T; N] {
+    fn sql_arg(&self) -> String {
+        let res = self
+            .iter()
+            .map(|item| item.sql_arg())
+            .collect::<Vec<_>>()
+            .join(", ");
+        format!("({})", res)
+    }
 }
 
-// 为常见的数组长度实现
-impl_sql_arg_array!(1);
-impl_sql_arg_array!(2);
-impl_sql_arg_array!(3);
-impl_sql_arg_array!(4);
-impl_sql_arg_array!(5);
-impl_sql_arg_array!(6);
-impl_sql_arg_array!(7);
-impl_sql_arg_array!(8);
-impl_sql_arg_array!(9);
-impl_sql_arg_array!(10);
-impl_sql_arg_array!(11);
-impl_sql_arg_array!(12);
+impl<T: SqlArg, const N: usize> SqlArg for &[T; N] {
+    fn sql_arg(&self) -> String {
+        let res = self
+            .iter()
+            .map(|item| item.sql_arg())
+            .collect::<Vec<_>>()
+            .join(", ");
+        format!("({})", res)
+    }
+}
 
 pub trait SqlArgs {
     fn sql_args(&self) -> Vec<String>;
@@ -404,6 +386,12 @@ impl_sql_args_tuple!(A:a, B:b, C:c, D:d, E:e, F:f, G:g, H:h, I:i, J:j);
 impl_sql_args_tuple!(A:a, B:b, C:c, D:d, E:e, F:f, G:g, H:h, I:i, J:j, K:k);
 impl_sql_args_tuple!(A:a, B:b, C:c, D:d, E:e, F:f, G:g, H:h, I:i, J:j, K:k, L:l);
 
+impl<const N: usize> SqlArgs for [&dyn SqlArg; N] {
+    fn sql_args(&self) -> Vec<String> {
+        self.iter().map(|arg| arg.sql_arg()).collect()
+    }
+}
+
 impl SqlArgs for &[&dyn SqlArg] {
     fn sql_args(&self) -> Vec<String> {
         self.iter().map(|arg| arg.sql_arg()).collect()
@@ -422,9 +410,27 @@ impl SqlArgs for Vec<Box<dyn SqlArg>> {
     }
 }
 
+impl<const N: usize> SqlArgs for [Box<dyn SqlArg>; N] {
+    fn sql_args(&self) -> Vec<String> {
+        self.iter().map(|arg| arg.sql_arg()).collect()
+    }
+}
+
 impl SqlArgs for &[Box<dyn SqlArg>] {
     fn sql_args(&self) -> Vec<String> {
         self.iter().map(|arg| arg.sql_arg()).collect()
+    }
+}
+
+impl<const N: usize> SqlArgs for [Option<&dyn SqlArg>; N] {
+    fn sql_args(&self) -> Vec<String> {
+        self.iter()
+            .map(|arg| {
+                arg.as_ref()
+                    .map(|arg| arg.sql_arg())
+                    .unwrap_or_else(|| "NULL".into())
+            })
+            .collect()
     }
 }
 
@@ -453,6 +459,18 @@ impl SqlArgs for Vec<Option<&dyn SqlArg>> {
 }
 
 impl SqlArgs for Vec<Option<Box<dyn SqlArg>>> {
+    fn sql_args(&self) -> Vec<String> {
+        self.iter()
+            .map(|arg| {
+                arg.as_ref()
+                    .map(|arg| arg.sql_arg())
+                    .unwrap_or_else(|| "NULL".into())
+            })
+            .collect()
+    }
+}
+
+impl<const N: usize> SqlArgs for [Option<Box<dyn SqlArg>>; N] {
     fn sql_args(&self) -> Vec<String> {
         self.iter()
             .map(|arg| {

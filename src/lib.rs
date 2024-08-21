@@ -314,7 +314,11 @@ impl SqlBuilder {
     /// # Ok(())
     /// # }
     /// ```
-    pub fn select_values<S: ToString>(values: &[S]) -> Self {
+    pub fn select_values<S, I>(values: I) -> Self
+    where
+        S: ToString,
+        I: IntoIterator<Item = S>,
+    {
         let mut sel = Self {
             statement: Statement::SelectValues,
             ..Self::default()
@@ -572,10 +576,14 @@ impl SqlBuilder {
     /// # Ok(())
     /// # }
     /// ```
-    pub fn fields<S: ToString>(&mut self, fields: &[S]) -> &mut Self {
+    pub fn fields<S, I>(&mut self, fields: I) -> &mut Self
+    where
+        S: ToString,
+        I: IntoIterator<Item = S>,
+    {
         let mut fields = fields
-            .iter()
-            .map(|f| (*f).to_string())
+            .into_iter()
+            .map(|f| f.to_string())
             .collect::<Vec<String>>();
         self.fields.append(&mut fields);
         self
