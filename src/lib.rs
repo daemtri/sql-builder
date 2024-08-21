@@ -581,60 +581,6 @@ impl SqlBuilder {
         self
     }
 
-    /// Replace fields.
-    ///
-    /// ```
-    /// # use anyhow::Result;
-    /// use sql_builder::SqlBuilder;
-    /// # #[derive(Default)]
-    /// # struct ReqData { filter: Option<String>, price_min: Option<u64>, price_max: Option<u64>,
-    /// # limit: Option<usize>, offset: Option<usize> }
-    ///
-    /// # fn main() -> Result<()> {
-    /// # let req_data = ReqData::default();
-    /// // Prepare query for total count
-    ///
-    /// let mut db = SqlBuilder::select_from("books");
-    ///
-    /// db.field("COUNT(id)");
-    ///
-    /// if let Some(filter) = &req_data.filter {
-    ///   db.and_where_like_any("LOWER(title)", filter.to_lowercase());
-    /// }
-    ///
-    /// if let Some(price_min) = &req_data.price_min {
-    ///   db.and_where_ge("price", price_min);
-    /// }
-    ///
-    /// if let Some(price_max) = &req_data.price_max {
-    ///   db.and_where_le("price", price_max);
-    /// }
-    ///
-    /// let sql_count = db.sql()?;
-    /// println!("Database query: total_count: {}", &sql_count);
-    ///
-    /// // Prepare query for results
-    ///
-    /// db.set_fields(&["id", "title", "price"]);
-    ///
-    /// if let (Some(limit), Some(offset)) = (req_data.limit, req_data.offset) {
-    ///   db.limit(limit).offset(offset);
-    /// }
-    ///
-    /// let sql_results = db.sql()?;
-    /// println!("Database query: results: {}", &sql_results);
-    /// # Ok(())
-    /// # }
-    /// ```
-    pub fn set_fields<S: ToString>(&mut self, fields: &[S]) -> &mut Self {
-        let fields = fields
-            .iter()
-            .map(|f| (*f).to_string())
-            .collect::<Vec<String>>();
-        self.fields = fields;
-        self
-    }
-
     /// Add field.
     ///
     /// ```
@@ -655,58 +601,6 @@ impl SqlBuilder {
     /// ```
     pub fn field<S: ToString>(&mut self, field: S) -> &mut Self {
         self.fields.push(field.to_string());
-        self
-    }
-
-    /// Replace fields with choosed one.
-    ///
-    /// ```
-    /// # use anyhow::Result;
-    /// use sql_builder::SqlBuilder;
-    /// # #[derive(Default)]
-    /// # struct ReqData { filter: Option<String>, price_min: Option<u64>, price_max: Option<u64>,
-    /// # limit: Option<usize>, offset: Option<usize> }
-    ///
-    /// # fn main() -> Result<()> {
-    /// # let req_data = ReqData::default();
-    /// // Prepare query for total count
-    ///
-    /// let mut db = SqlBuilder::select_from("books");
-    ///
-    /// db.field("COUNT(id)");
-    ///
-    /// if let Some(filter) = &req_data.filter {
-    ///   db.and_where_like_any("LOWER(title)", filter.to_lowercase());
-    /// }
-    ///
-    /// if let Some(price_min) = &req_data.price_min {
-    ///   db.and_where_ge("price", price_min);
-    /// }
-    ///
-    /// if let Some(price_max) = &req_data.price_max {
-    ///   db.and_where_le("price", price_max);
-    /// }
-    ///
-    /// let sql_count = db.sql()?;
-    /// println!("Database query: total_count: {}", &sql_count);
-    ///
-    /// // Prepare query for results
-    ///
-    /// db.set_field("id");
-    /// db.field("title");
-    /// db.field("price");
-    ///
-    /// if let (Some(limit), Some(offset)) = (req_data.limit, req_data.offset) {
-    ///   db.limit(limit).offset(offset);
-    /// }
-    ///
-    /// let sql_results = db.sql()?;
-    /// println!("Database query: results: {}", &sql_results);
-    /// # Ok(())
-    /// # }
-    /// ```
-    pub fn set_field<S: ToString>(&mut self, field: S) -> &mut Self {
-        self.fields = vec![field.to_string()];
         self
     }
 
