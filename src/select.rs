@@ -79,14 +79,8 @@ impl SelectFrom {
             builder: self.builder,
         }
     }
-    pub fn order_by_asc<S: ToString>(mut self, column: S) -> OrderBy {
-        self.builder.order_asc(column);
-        OrderBy {
-            builder: self.builder,
-        }
-    }
-    pub fn order_by_desc<S: ToString>(mut self, column: S) -> OrderBy {
-        self.builder.order_desc(column);
+    pub fn order_by<S: ToString>(mut self, column: S) -> OrderBy {
+        self.builder.order_by(column);
         OrderBy {
             builder: self.builder,
         }
@@ -124,14 +118,8 @@ impl SelectWhere {
             builder: self.builder,
         }
     }
-    pub fn order_by_asc<S: ToString>(mut self, column: S) -> OrderBy {
-        self.builder.order_asc(column);
-        OrderBy {
-            builder: self.builder,
-        }
-    }
-    pub fn order_by_desc<S: ToString>(mut self, column: S) -> OrderBy {
-        self.builder.order_desc(column);
+    pub fn order_by<S: ToString>(mut self, column: S) -> OrderBy {
+        self.builder.order_by(column);
         OrderBy {
             builder: self.builder,
         }
@@ -161,14 +149,8 @@ impl GroupBy {
             builder: self.builder,
         }
     }
-    pub fn order_by_asc<S: ToString>(mut self, column: S) -> OrderBy {
-        self.builder.order_asc(column);
-        OrderBy {
-            builder: self.builder,
-        }
-    }
-    pub fn order_by_desc<S: ToString>(mut self, column: S) -> OrderBy {
-        self.builder.order_desc(column);
+    pub fn order_by<S: ToString>(mut self, column: S) -> OrderBy {
+        self.builder.order_by(column);
         OrderBy {
             builder: self.builder,
         }
@@ -192,14 +174,8 @@ pub struct Having {
 }
 
 impl Having {
-    pub fn order_by_asc<S: ToString>(mut self, column: S) -> OrderBy {
-        self.builder.order_asc(column);
-        OrderBy {
-            builder: self.builder,
-        }
-    }
-    pub fn order_by_desc<S: ToString>(mut self, column: S) -> OrderBy {
-        self.builder.order_desc(column);
+    pub fn order_by<S: ToString>(mut self, column: S) -> OrderBy {
+        self.builder.order_by(column);
         OrderBy {
             builder: self.builder,
         }

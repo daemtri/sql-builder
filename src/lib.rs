@@ -3093,7 +3093,7 @@ impl SqlBuilder {
     ///     .field("title")
     ///     .field("price")
     ///     .and_where_like_left("title", "Harry Potter")
-    ///     .order_by("price", false)
+    ///     .order_by("price")
     ///     .sql()?;
     ///
     /// assert_eq!("SELECT title, price FROM books WHERE title LIKE 'Harry Potter%' ORDER BY price;", &sql);
@@ -3102,12 +3102,8 @@ impl SqlBuilder {
     /// # Ok(())
     /// # }
     /// ```
-    pub fn order_by<S: ToString>(&mut self, field: S, desc: bool) -> &mut Self {
-        let order = if desc {
-            format!("{} DESC", &field.to_string())
-        } else {
-            field.to_string()
-        };
+    pub fn order_by<S: ToString>(&mut self, field: S) -> &mut Self {
+        let order = field.to_string();
         self.order_by.push(order);
         self
     }
@@ -3133,7 +3129,7 @@ impl SqlBuilder {
     /// # }
     /// ```
     pub fn order_asc<S: ToString>(&mut self, field: S) -> &mut Self {
-        self.order_by(&field.to_string(), false)
+        self.order_by(field)
     }
 
     /// Add ORDER BY DESC.
@@ -3157,7 +3153,7 @@ impl SqlBuilder {
     /// # }
     /// ```
     pub fn order_desc<S: ToString>(&mut self, field: S) -> &mut Self {
-        self.order_by(&field.to_string(), true)
+        self.order_by(format!("{} DESC", field.to_string()))
     }
 
     /// Set LIMIT.
@@ -3877,7 +3873,7 @@ mod tests {
             .field("title")
             .field("price")
             .and_where_like_left("title", "Harry Potter")
-            .order_by("price", false)
+            .order_by("price")
             .sql()?;
 
         assert_eq!(
