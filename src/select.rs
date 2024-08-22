@@ -1,6 +1,39 @@
+use crate::esc;
 use crate::Builder;
 use crate::SqlBuilder;
 use anyhow::Result;
+
+pub trait OrderColumn {
+    fn asc(self) -> String;
+    fn desc(self) -> String;
+}
+
+impl OrderColumn for String {
+    fn asc(self) -> String {
+        esc(self)
+    }
+    fn desc(self) -> String {
+        format!("{} DESC", esc(self))
+    }
+}
+
+impl OrderColumn for &String {
+    fn asc(self) -> String {
+        esc(self)
+    }
+    fn desc(self) -> String {
+        format!("{} DESC", esc(self))
+    }
+}
+
+impl OrderColumn for &str {
+    fn asc(self) -> String {
+        esc(self)
+    }
+    fn desc(self) -> String {
+        format!("{} DESC", esc(self))
+    }
+}
 
 pub struct Select<T, I>(pub I)
 where
