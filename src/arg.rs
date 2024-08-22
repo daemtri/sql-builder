@@ -261,37 +261,45 @@ impl SqlArg for NULL {
 
 impl<T: SqlArg> SqlArg for Vec<T> {
     fn sql_arg(&self) -> String {
-        self.iter()
+        let res = self
+            .iter()
             .map(|v| v.sql_arg())
             .collect::<Vec<_>>()
-            .join(", ")
+            .join(", ");
+        format!("({})", res)
     }
 }
 
 impl<T: SqlArg> SqlArg for &Vec<T> {
     fn sql_arg(&self) -> String {
-        self.iter()
+        let res = self
+            .iter()
             .map(|v| v.sql_arg())
             .collect::<Vec<_>>()
-            .join(", ")
+            .join(", ");
+        format!("({})", res)
     }
 }
 
 impl<T: SqlArg> SqlArg for [T] {
     fn sql_arg(&self) -> String {
-        self.iter()
+        let res = self
+            .iter()
             .map(|v| v.sql_arg())
             .collect::<Vec<_>>()
-            .join(", ")
+            .join(", ");
+        format!("({})", res)
     }
 }
 
 impl<T: SqlArg> SqlArg for &[T] {
     fn sql_arg(&self) -> String {
-        self.iter()
+        let res = self
+            .iter()
             .map(|v| v.sql_arg())
             .collect::<Vec<_>>()
-            .join(", ")
+            .join(", ");
+        format!("({})", res)
     }
 }
 
