@@ -2,7 +2,7 @@ use crate::Builder;
 use crate::SqlBuilder;
 use anyhow::Result;
 
-pub struct Select<T, I>(I)
+pub struct Select<T, I>(pub I)
 where
     T: ToString,
     I: IntoIterator<Item = T>;
