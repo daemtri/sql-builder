@@ -163,11 +163,17 @@ pub mod bind;
 pub mod error;
 pub mod name;
 pub mod prelude;
+pub mod select;
 
 pub use crate::error::SqlBuilderError;
 pub use crate::name::SqlName;
+pub use crate::select::Select;
 //pub use crate::where::WhereBuilder;
 use anyhow::Result;
+
+pub trait Builder {
+    fn build(self) -> Result<String>;
+}
 
 /// Main SQL builder
 #[derive(Clone)]
@@ -534,6 +540,34 @@ impl SqlBuilder {
         text.push_str(&table.to_string());
 
         self.joins.push(text);
+        self
+    }
+
+    /// Join constraint to the last JOIN part.
+    ///
+    /// ```
+    /// # use anyhow::Result;
+    /// use sql_builder::SqlBuilder;
+    ///
+    /// # fn main() -> Result<()> {
+    /// let sql = SqlBuilder::select_from("books AS b")
+    ///     .field("b.title")
+    ///     .field("s.total")
+    ///     .join("shops AS s")
+    ///     .on("b.id = s.book")
+    ///     .sql()?;
+    ///
+    /// assert_eq!("SELECT b.title, s.total FROM books AS b JOIN shops AS s ON b.id = s.book;", &sql);
+    /// // add                                                                 ^^^^^^^^^^^^^
+    /// // here                                                                 constraint
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn on<S: ToString>(&mut self, constraint: S) -> &mut Self {
+        if let Some(last) = self.joins.last_mut() {
+            last.push_str(" ON ");
+            last.push_str(&constraint.to_string());
+        }
         self
     }
 
