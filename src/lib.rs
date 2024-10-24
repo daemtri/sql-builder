@@ -161,8 +161,10 @@
 pub mod arg;
 pub mod bind;
 pub mod error;
+pub mod insert;
 pub mod name;
 pub mod prelude;
+pub mod select;
 
 pub use crate::error::SqlBuilderError;
 pub use crate::name::SqlName;
