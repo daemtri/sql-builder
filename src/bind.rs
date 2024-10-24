@@ -1,5 +1,4 @@
 use crate::arg::{SqlArg, SqlArgs};
-use std::collections::HashMap;
 
 pub trait Bind {
     /// Replace first ? with a value.
@@ -44,88 +43,6 @@ pub trait Bind {
     where
         SS: SqlArgs;
 
-    /// Replace all $N with a value.
-    ///
-    /// ```
-    /// # use std::error::Error;
-    /// # use anyhow::Result;
-    /// use sql_builder::prelude::*;
-    ///
-    /// # fn main() -> Result<()> {
-    /// let sql = SqlBuilder::select_from("books")
-    ///     .fields(&["title", "price"])
-    ///     .and_where("price > $1 AND price < $1 + $2"
-    ///                    .bind_num(1, &100)
-    ///                    .bind_num(2, &200))
-    ///     .sql()?;
-    ///
-    /// assert_eq!("SELECT title, price FROM books WHERE price > 100 AND price < 100 + 200;", &sql);
-    /// # Ok(())
-    /// # }
-    /// ```
-    ///
-    /// ```
-    /// # use std::error::Error;
-    /// # use anyhow::Result;
-    /// use sql_builder::prelude::*;
-    ///
-    /// # fn main() -> Result<()> {
-    /// let sql = SqlBuilder::select_from("books")
-    ///     .fields(&["title", "price"])
-    ///     .and_where("price > $1")
-    ///     .and_where("price < $1 + $2")
-    ///     .sql()?
-    ///     .bind_num(1, &100)
-    ///     .bind_num(2, &200);
-    ///
-    /// assert_eq!("SELECT title, price FROM books WHERE (price > 100) AND (price < 100 + 200);", &sql);
-    /// # Ok(())
-    /// # }
-    /// ```
-    fn bind_num<S>(&self, num: u16, arg: S) -> String
-    where
-        S: SqlArg;
-
-    /// Replace $1, $2, ... with elements of array.
-    /// Escape the $ symbol with another $ symbol.
-    ///
-    /// ```
-    /// # use std::error::Error;
-    /// # use anyhow::Result;
-    /// use sql_builder::prelude::*;
-    ///
-    /// # fn main() -> Result<()> {
-    /// let sql = SqlBuilder::select_from("books")
-    ///     .fields(&["title", "price"])
-    ///     .and_where("price > $1 AND price < $1 + $2".bind_nums((100, 200)))
-    ///     .sql()?;
-    ///
-    /// assert_eq!("SELECT title, price FROM books WHERE price > 100 AND price < 100 + 200;", &sql);
-    /// # Ok(())
-    /// # }
-    /// ```
-    ///
-    /// ```
-    /// # use std::error::Error;
-    /// # use anyhow::Result;
-    /// use sql_builder::prelude::*;
-    ///
-    /// # fn main() -> Result<()> {
-    /// let sql = SqlBuilder::select_from("books")
-    ///     .fields(&["title", "price"])
-    ///     .and_where("price > $1")
-    ///     .and_where("price < $1 + $2")
-    ///     .sql()?
-    ///     .bind_nums((100, 200));
-    ///
-    /// assert_eq!("SELECT title, price FROM books WHERE (price > 100) AND (price < 100 + 200);", &sql);
-    /// # Ok(())
-    /// # }
-    /// ```
-    fn bind_nums<SS>(&self, args: SS) -> String
-    where
-        SS: SqlArgs;
-
     /// Replace all :name: with a value.
     ///
     /// ```
@@ -148,34 +65,6 @@ pub trait Bind {
     fn bind_name<S>(&self, name: &dyn ToString, arg: S) -> String
     where
         S: SqlArg;
-
-    /// Replace each :name: from map.
-    /// Escape the : symbol with another : symbol.
-    ///
-    /// ```
-    /// # use std::error::Error;
-    /// # use anyhow::Result;
-    /// use sql_builder::prelude::*;
-    /// use std::collections::HashMap;
-    ///
-    /// # fn main() -> Result<()> {
-    /// let mut names: HashMap<&str, &dyn SqlArg> = HashMap::new();
-    /// names.insert("name", &"Harry Potter and the Philosopher's Stone");
-    /// names.insert("costs", &150);
-    ///
-    /// let sql = SqlBuilder::insert_into("books")
-    ///     .fields(&["title", "price"])
-    ///     .values(&[":name:, :costs:"])
-    ///     .sql()?
-    ///     .bind_names(&names);
-    ///
-    /// assert_eq!("INSERT INTO books (title, price) VALUES ('Harry Potter and the Philosopher''s Stone', 150);", &sql);
-    /// # Ok(())
-    /// # }
-    /// ```
-    fn bind_names<'a, B>(&self, names: B) -> String
-    where
-        B: BindNames<'a>;
 }
 
 impl Bind for &str {
@@ -227,94 +116,6 @@ impl Bind for &str {
         (*self).to_string().binds(args)
     }
 
-    /// Replace all $N with a value.
-    ///
-    /// ```
-    /// # use std::error::Error;
-    /// # use anyhow::Result;
-    /// use sql_builder::prelude::*;
-    ///
-    /// # fn main() -> Result<()> {
-    /// let sql = SqlBuilder::select_from("books")
-    ///     .fields(&["title", "price"])
-    ///     .and_where("price > $1 AND price < $1 + $2"
-    ///                    .bind_num(1, &100)
-    ///                    .bind_num(2, &200))
-    ///     .sql()?;
-    ///
-    /// assert_eq!("SELECT title, price FROM books WHERE price > 100 AND price < 100 + 200;", &sql);
-    /// # Ok(())
-    /// # }
-    /// ```
-    ///
-    /// ```
-    /// # use std::error::Error;
-    /// # use anyhow::Result;
-    /// use sql_builder::prelude::*;
-    ///
-    /// # fn main() -> Result<()> {
-    /// let sql = SqlBuilder::select_from("books")
-    ///     .fields(&["title", "price"])
-    ///     .and_where("price > $1")
-    ///     .and_where("price < $1 + $2")
-    ///     .sql()?
-    ///     .bind_num(1, &100)
-    ///     .bind_num(2, &200);
-    ///
-    /// assert_eq!("SELECT title, price FROM books WHERE (price > 100) AND (price < 100 + 200);", &sql);
-    /// # Ok(())
-    /// # }
-    /// ```
-    fn bind_num<S>(&self, num: u16, arg: S) -> String
-    where
-        S: SqlArg,
-    {
-        (*self).to_string().bind_num(num, arg)
-    }
-
-    /// Replace $1, $2, ... with elements of array.
-    /// Escape the $ symbol with another $ symbol.
-    ///
-    /// ```
-    /// # use std::error::Error;
-    /// # use anyhow::Result;
-    /// use sql_builder::prelude::*;
-    ///
-    /// # fn main() -> Result<()> {
-    /// let sql = SqlBuilder::select_from("books")
-    ///     .fields(&["title", "price"])
-    ///     .and_where("price > $1 AND price < $1 + $2".bind_nums((100, 200)))
-    ///     .sql()?;
-    ///
-    /// assert_eq!("SELECT title, price FROM books WHERE price > 100 AND price < 100 + 200;", &sql);
-    /// # Ok(())
-    /// # }
-    /// ```
-    ///
-    /// ```
-    /// # use std::error::Error;
-    /// # use anyhow::Result;
-    /// use sql_builder::prelude::*;
-    ///
-    /// # fn main() -> Result<()> {
-    /// let sql = SqlBuilder::select_from("books")
-    ///     .fields(&["title", "price"])
-    ///     .and_where("price > $1")
-    ///     .and_where("price < $1 + $2")
-    ///     .sql()?
-    ///     .bind_nums((100, 200));
-    ///
-    /// assert_eq!("SELECT title, price FROM books WHERE (price > 100) AND (price < 100 + 200);", &sql);
-    /// # Ok(())
-    /// # }
-    /// ```
-    fn bind_nums<SS>(&self, args: SS) -> String
-    where
-        SS: SqlArgs,
-    {
-        (*self).to_string().bind_nums(args)
-    }
-
     /// Replace all :name: with a value.
     ///
     /// ```
@@ -339,37 +140,6 @@ impl Bind for &str {
         S: SqlArg,
     {
         (*self).to_string().bind_name(name, arg)
-    }
-
-    /// Replace each :name: from map.
-    /// Escape the : symbol with another : symbol.
-    ///
-    /// ```
-    /// # use std::error::Error;
-    /// # use anyhow::Result;
-    /// use sql_builder::prelude::*;
-    /// use std::collections::HashMap;
-    ///
-    /// # fn main() -> Result<()> {
-    /// let mut names: HashMap<&str, &dyn SqlArg> = HashMap::new();
-    /// names.insert("name", &"Harry Potter and the Philosopher's Stone");
-    /// names.insert("costs", &150);
-    ///
-    /// let sql = SqlBuilder::insert_into("books")
-    ///     .fields(&["title", "price"])
-    ///     .values(&[":name:, :costs:"])
-    ///     .sql()?
-    ///     .bind_names(&names);
-    ///
-    /// assert_eq!("INSERT INTO books (title, price) VALUES ('Harry Potter and the Philosopher''s Stone', 150);", &sql);
-    /// # Ok(())
-    /// # }
-    /// ```
-    fn bind_names<'a, B>(&self, names: B) -> String
-    where
-        B: BindNames<'a>,
-    {
-        (*self).to_string().bind_names(names)
     }
 }
 
@@ -434,138 +204,6 @@ impl Bind for String {
         res
     }
 
-    /// Replace all $N with a value.
-    ///
-    /// ```
-    /// # use std::error::Error;
-    /// # use anyhow::Result;
-    /// use sql_builder::prelude::*;
-    ///
-    /// # fn main() -> Result<()> {
-    /// let sql = SqlBuilder::select_from("books")
-    ///     .fields(&["title", "price"])
-    ///     .and_where("price > $1 AND price < $1 + $2"
-    ///                    .bind_num(1, &100)
-    ///                    .bind_num(2, &200))
-    ///     .sql()?;
-    ///
-    /// assert_eq!("SELECT title, price FROM books WHERE price > 100 AND price < 100 + 200;", &sql);
-    /// # Ok(())
-    /// # }
-    /// ```
-    ///
-    /// ```
-    /// # use std::error::Error;
-    /// # use anyhow::Result;
-    /// use sql_builder::prelude::*;
-    ///
-    /// # fn main() -> Result<()> {
-    /// let sql = SqlBuilder::select_from("books")
-    ///     .fields(&["title", "price"])
-    ///     .and_where("price > $1")
-    ///     .and_where("price < $1 + $2")
-    ///     .sql()?
-    ///     .bind_num(1, &100)
-    ///     .bind_num(2, &200);
-    ///
-    /// assert_eq!("SELECT title, price FROM books WHERE (price > 100) AND (price < 100 + 200);", &sql);
-    /// # Ok(())
-    /// # }
-    /// ```
-    fn bind_num<S>(&self, num: u16, arg: S) -> String
-    where
-        S: SqlArg,
-    {
-        let rep = format!("${}", &num);
-        self.replace(&rep, &arg.sql_arg())
-    }
-
-    /// Replace $1, $2, ... with elements of array.
-    /// Escape the $ symbol with another $ symbol.
-    ///
-    /// ```
-    /// # use std::error::Error;
-    /// # use anyhow::Result;
-    /// use sql_builder::prelude::*;
-    ///
-    /// # fn main() -> Result<()> {
-    /// let sql = SqlBuilder::select_from("books")
-    ///     .fields(&["title", "price"])
-    ///     .and_where("price > $1 AND price < $1 + $2".bind_nums((100, 200)))
-    ///     .sql()?;
-    ///
-    /// assert_eq!("SELECT title, price FROM books WHERE price > 100 AND price < 100 + 200;", &sql);
-    /// # Ok(())
-    /// # }
-    /// ```
-    ///
-    /// ```
-    /// # use std::error::Error;
-    /// # use anyhow::Result;
-    /// use sql_builder::prelude::*;
-    ///
-    /// # fn main() -> Result<()> {
-    /// let sql = SqlBuilder::select_from("books")
-    ///     .fields(&["title", "price"])
-    ///     .and_where("price > $1")
-    ///     .and_where("price < $1 + $2")
-    ///     .sql()?
-    ///     .bind_nums((100, 200));
-    ///
-    /// assert_eq!("SELECT title, price FROM books WHERE (price > 100) AND (price < 100 + 200);", &sql);
-    /// # Ok(())
-    /// # }
-    /// ```
-    fn bind_nums<SS>(&self, args: SS) -> String
-    where
-        SS: SqlArgs,
-    {
-        let args = args.sql_args();
-        let mut res = String::new();
-        let mut num = 0usize;
-        let mut wait_digit = false;
-        let len = args.len();
-        for ch in self.chars() {
-            if ch == '$' {
-                if wait_digit {
-                    if num > 0 {
-                        let idx = num - 1;
-                        if len > idx {
-                            res.push_str(&args[idx]);
-                        }
-                        num = 0;
-                    } else {
-                        wait_digit = false;
-                        res.push(ch);
-                    }
-                } else {
-                    wait_digit = true;
-                }
-            } else if wait_digit {
-                if let Some(digit) = ch.to_digit(10) {
-                    num = num * 10 + digit as usize;
-                } else {
-                    let idx = num - 1;
-                    if len > idx {
-                        res.push_str(&args[idx]);
-                    }
-                    res.push(ch);
-                    wait_digit = false;
-                    num = 0;
-                }
-            } else {
-                res.push(ch);
-            }
-        }
-        if wait_digit && num > 0 {
-            let idx = num - 1;
-            if len > idx {
-                res.push_str(&args[idx]);
-            }
-        }
-        res
-    }
-
     /// Replace all :name: with a value.
     ///
     /// ```
@@ -592,121 +230,6 @@ impl Bind for String {
         let rep = format!(":{}:", &name.to_string());
         self.replace(&rep, &arg.sql_arg())
     }
-
-    /// Replace each :name: from map.
-    /// Escape the : symbol with another : symbol.
-    ///
-    /// ```
-    /// # use std::error::Error;
-    /// # use anyhow::Result;
-    /// use sql_builder::prelude::*;
-    /// use std::collections::HashMap;
-    ///
-    /// # fn main() -> Result<()> {
-    /// let mut names: HashMap<&str, &dyn SqlArg> = HashMap::new();
-    /// names.insert("name", &"Harry Potter and the Philosopher's Stone");
-    /// names.insert("costs", &150);
-    ///
-    /// let sql = SqlBuilder::insert_into("books")
-    ///     .fields(&["title", "price"])
-    ///     .values(&[":name:, :costs:"])
-    ///     .sql()?
-    ///     .bind_names(&names);
-    ///
-    /// assert_eq!("INSERT INTO books (title, price) VALUES ('Harry Potter and the Philosopher''s Stone', 150);", &sql);
-    /// # Ok(())
-    /// # }
-    /// ```
-    fn bind_names<'a, B>(&self, names: B) -> String
-    where
-        B: BindNames<'a>,
-    {
-        let mut res = String::new();
-        let mut key = String::new();
-        let mut wait_colon = false;
-        let names = names.names_map();
-        for ch in self.chars() {
-            if ch == ':' {
-                if wait_colon {
-                    if key.is_empty() {
-                        res.push(ch);
-                    } else {
-                        let skey = key.to_string();
-                        if let Some(value) = names.get(&*skey) {
-                            res.push_str(&value.sql_arg());
-                        } else {
-                            res.push_str("NULL");
-                        }
-                        key = String::new();
-                    }
-                    wait_colon = false;
-                } else {
-                    wait_colon = true;
-                }
-            } else if wait_colon {
-                key.push(ch);
-            } else {
-                res.push(ch);
-            }
-        }
-        if wait_colon {
-            res.push(';');
-            res.push_str(&key);
-        }
-        res
-    }
-}
-
-pub trait BindNames<'a> {
-    fn names_map(&self) -> HashMap<&'a str, &dyn SqlArg>;
-}
-
-impl<'a> BindNames<'a> for &dyn BindNames<'a> {
-    fn names_map(&self) -> HashMap<&'a str, &dyn SqlArg> {
-        (*self).names_map()
-    }
-}
-
-impl<'a> BindNames<'a> for HashMap<&'a str, &dyn SqlArg> {
-    fn names_map(&self) -> HashMap<&'a str, &dyn SqlArg> {
-        self.to_owned()
-    }
-}
-
-impl<'a> BindNames<'a> for &HashMap<&'a str, &dyn SqlArg> {
-    fn names_map(&self) -> HashMap<&'a str, &dyn SqlArg> {
-        self.to_owned().to_owned()
-    }
-}
-
-impl<'a> BindNames<'a> for Vec<(&'a str, &dyn SqlArg)> {
-    fn names_map(&self) -> HashMap<&'a str, &dyn SqlArg> {
-        let mut map = HashMap::new();
-        for (k, v) in self.iter() {
-            map.insert(*k, *v);
-        }
-        map
-    }
-}
-
-impl<'a> BindNames<'a> for &Vec<(&'a str, &dyn SqlArg)> {
-    fn names_map(&self) -> HashMap<&'a str, &dyn SqlArg> {
-        let mut map = HashMap::new();
-        for (k, v) in self.iter() {
-            map.insert(*k, *v);
-        }
-        map
-    }
-}
-
-impl<'a> BindNames<'a> for &[(&'a str, &dyn SqlArg)] {
-    fn names_map(&self) -> HashMap<&'a str, &dyn SqlArg> {
-        let mut map = HashMap::new();
-        for (k, v) in self.iter() {
-            map.insert(*k, *v);
-        }
-        map
-    }
 }
 
 #[cfg(test)]
@@ -730,10 +253,6 @@ mod tests {
         assert_eq!("fo10o", &"fo?o".bind(&10_isize));
         assert_eq!("foTRUEo", &"fo?o".bind(&true));
         assert_eq!("foFALSEo", &"fo?o".bind(&false));
-        assert_eq!(
-            "10f'lol'o10o$3",
-            &"$1f$2o$1o$3".bind_num(1, &10_u8).bind_num(2, &"lol")
-        );
         assert_eq!("f'lol'oo:def:", &"f:abc:oo:def:".bind_name(&"abc", &"lol"));
 
         Ok(())
@@ -751,10 +270,6 @@ mod tests {
             "10f'AAA'oTRUEo10",
             &String::from("?f?o?o?").binds((10, "AAA", true))
         );
-        assert_eq!(
-            "10f'AAA'o$oTRUE",
-            &String::from("$1f$02o$$o$3$4").bind_nums((10, "AAA", true))
-        );
         assert_eq!("1f1.5o0.0000001o1", &"?f?o?o?".binds((1.0, 1.5, 0.0000001)));
 
         Ok(())
@@ -769,46 +284,6 @@ mod tests {
 
         assert_eq!(
             "SELECT title, price FROM books WHERE price > 100 AND title LIKE 'Harry Potter%';",
-            &sql
-        );
-
-        Ok(())
-    }
-
-    #[test]
-    fn test_bind_names() -> Result<()> {
-        let mut names: HashMap<&str, &dyn SqlArg> = HashMap::new();
-        names.insert("aaa", &10);
-        names.insert("bbb", &20);
-        names.insert("ccc", &"tt");
-        names.insert("ddd", &40);
-
-        let sql = SqlBuilder::insert_into("books")
-            .fields(&["title", "price"])
-            .values(&["'a_book', :aaa:"])
-            .values(&["'c_book', :ccc:"])
-            .values(&["'e_book', :eee:"])
-            .sql()?
-            .bind_names(&names);
-
-        assert_eq!(
-            "INSERT INTO books (title, price) VALUES ('a_book', 10), ('c_book', 'tt'), ('e_book', NULL);",
-            &sql
-        );
-
-        let names: Vec<(&str, &dyn SqlArg)> =
-            vec![("aaa", &10), ("bbb", &20), ("ccc", &"tt"), ("ddd", &40)];
-
-        let sql = SqlBuilder::insert_into("books")
-            .fields(&["title", "price"])
-            .values(&["'a_book', :aaa:"])
-            .values(&["'c_book', :ccc:"])
-            .values(&["'e_book', :eee:"])
-            .sql()?
-            .bind_names(&names);
-
-        assert_eq!(
-            "INSERT INTO books (title, price) VALUES ('a_book', 10), ('c_book', 'tt'), ('e_book', NULL);",
             &sql
         );
 

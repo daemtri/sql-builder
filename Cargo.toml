@@ -21,4 +21,6 @@ travis-ci = { repository = "perdumonocle/sql-builder" }
 
 [dependencies]
 anyhow = "1.0"
+chrono = "0.4.38"
+rust_decimal = "1.36.0"
 thiserror = "1.0"

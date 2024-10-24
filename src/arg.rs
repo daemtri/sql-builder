@@ -1,3 +1,6 @@
+use chrono::{NaiveDate, NaiveDateTime};
+use rust_decimal::Decimal;
+
 use crate::quote;
 use std::borrow::{Cow, ToOwned};
 
@@ -230,6 +233,42 @@ impl SqlArg for bool {
 impl SqlArg for &bool {
     fn sql_arg(&self) -> String {
         String::from(if **self { "TRUE" } else { "FALSE" })
+    }
+}
+
+impl SqlArg for Decimal {
+    fn sql_arg(&self) -> String {
+        self.to_string()
+    }
+}
+
+impl SqlArg for &Decimal {
+    fn sql_arg(&self) -> String {
+        self.to_string()
+    }
+}
+
+impl SqlArg for NaiveDate {
+    fn sql_arg(&self) -> String {
+        quote(self.format("%Y-%m-%d").to_string())
+    }
+}
+
+impl SqlArg for &NaiveDate {
+    fn sql_arg(&self) -> String {
+        quote(self.format("%Y-%m-%d").to_string())
+    }
+}
+
+impl SqlArg for NaiveDateTime {
+    fn sql_arg(&self) -> String {
+        quote(self.format("%Y-%m-%d %H:%M:%S").to_string())
+    }
+}
+
+impl SqlArg for &NaiveDateTime {
+    fn sql_arg(&self) -> String {
+        quote(self.format("%Y-%m-%d %H:%M:%S").to_string())
     }
 }
 

@@ -163,11 +163,9 @@ pub mod bind;
 pub mod error;
 pub mod name;
 pub mod prelude;
-pub mod select;
 
 pub use crate::error::SqlBuilderError;
 pub use crate::name::SqlName;
-pub use crate::select::Select;
 //pub use crate::where::WhereBuilder;
 use anyhow::Result;
 
