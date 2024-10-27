@@ -28,6 +28,11 @@ impl Insert {
         self
     }
 
+    pub fn replace_into_table<S: ToString>(&mut self, table_name: S) -> &mut Self {
+        self.table_name = table_name.to_string();
+        self
+    }
+
     pub fn build(&self) -> String {
         format!(
             "INSERT INTO {} ({}) VALUES ({})",
