@@ -1,5 +1,6 @@
 use crate::arg::SqlArg;
 
+#[derive(Clone, Debug)]
 pub struct Insert {
     pub(crate) table_name: String,
     pub(crate) fields: String,
