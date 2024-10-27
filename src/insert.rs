@@ -10,8 +10,8 @@ impl Insert {
     pub fn into_table<S: ToString>(table_name: S) -> Self {
         Self {
             table_name: table_name.to_string(),
-            fields: String::new(),
-            values: String::new(),
+            fields: String::with_capacity(100),
+            values: String::with_capacity(200),
         }
     }
 
