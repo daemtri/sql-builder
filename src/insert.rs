@@ -7,17 +7,12 @@ pub struct Insert {
 }
 
 impl Insert {
-    pub fn new() -> Self {
+    pub fn into_table<S: ToString>(table_name: S) -> Self {
         Self {
-            table_name: String::new(),
+            table_name: table_name.to_string(),
             fields: String::new(),
             values: String::new(),
         }
-    }
-
-    pub fn into<S: ToString>(&mut self, table_name: S) -> &mut Self {
-        self.table_name = table_name.to_string();
-        self
     }
 
     pub fn field_value<T: SqlArg>(&mut self, field_name: &str, value: T) -> &mut Self {
