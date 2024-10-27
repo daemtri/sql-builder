@@ -28,7 +28,7 @@ impl Insert {
         self
     }
 
-    pub fn replace_into_table<S: ToString>(&mut self, table_name: S) -> &mut Self {
+    pub fn reset_table<S: ToString>(&mut self, table_name: S) -> &mut Self {
         self.table_name = table_name.to_string();
         self
     }
