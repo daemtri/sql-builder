@@ -18,7 +18,7 @@ impl Insert {
 
     pub fn field_value<T: SqlArg>(&mut self, field_name: &str, value: T) -> &mut Self {
         if self.fields.len() > 0 {
-            self.fields.push_str(format!(", {}", field_name).as_str());
+            self.fields.push_str(format!(", `{}`", field_name).as_str());
             self.values
                 .push_str(format!(", {}", value.sql_arg()).as_str());
         } else {
@@ -36,7 +36,7 @@ impl Insert {
 
     pub fn build(&self) -> String {
         format!(
-            "INSERT INTO {} ({}) VALUES ({})",
+            "INSERT INTO `{}` ({}) VALUES ({})",
             self.table_name, self.fields, self.values
         )
     }
