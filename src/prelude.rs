@@ -3,4 +3,5 @@ pub use crate::bind::*;
 pub use crate::insert::*;
 pub use crate::name::*;
 pub use crate::select::*;
+pub use crate::update::*;
 pub use crate::{quote, SqlBuilder};

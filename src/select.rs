@@ -1,300 +1,286 @@
-use crate::esc;
-use crate::Builder;
-use crate::SqlBuilder;
+pub use crate::error::SqlBuilderError;
+pub use crate::name::SqlName;
+//pub use crate::where::WhereBuilder;
 use anyhow::Result;
 
-pub trait OrderColumn {
-    fn asc(self) -> String;
-    fn desc(self) -> String;
+/// Main SQL builder
+#[derive(Clone)]
+pub struct SelectBuilder {
+    table: String,
+    joins: Vec<String>,
+    fields: Vec<String>,
+    group_by: Vec<String>,
+    having: Option<String>,
+    unions: String,
+    wheres: Vec<String>,
+    order_by: Vec<String>,
+    limit: Option<String>,
+    offset: Option<String>,
+    error: Option<SqlBuilderError>,
 }
 
-impl OrderColumn for String {
-    fn asc(self) -> String {
-        esc(self)
+impl SelectBuilder {
+    /// Default constructor for struct
+    fn default() -> Self {
+        Self {
+            table: String::new(),
+            joins: Vec::new(),
+            fields: Vec::new(),
+            group_by: Vec::new(),
+            having: None,
+            unions: String::new(),
+            wheres: Vec::new(),
+            order_by: Vec::new(),
+            limit: None,
+            offset: None,
+            error: None::<SqlBuilderError>,
+        }
     }
-    fn desc(self) -> String {
-        format!("{} DESC", esc(self))
-    }
-}
 
-impl OrderColumn for &String {
-    fn asc(self) -> String {
-        esc(self)
+    pub fn select_from<S: ToString>(table: S) -> Self {
+        Self {
+            table: table.to_string(),
+            ..Self::default()
+        }
     }
-    fn desc(self) -> String {
-        format!("{} DESC", esc(self))
-    }
-}
 
-impl OrderColumn for &str {
-    fn asc(self) -> String {
-        esc(self)
+    pub fn and_table<S: ToString>(&mut self, table: S) -> &mut Self {
+        self.table = format!("{}, {}", self.table, table.to_string());
+        self
     }
-    fn desc(self) -> String {
-        format!("{} DESC", esc(self))
+
+    pub fn left_join<S: ToString>(&mut self, table: S) -> &mut Self {
+        let mut text = String::from("LEFT JOIN ");
+        text.push_str(&table.to_string());
+
+        self.joins.push(text);
+        self
     }
-}
 
-pub struct Select<T, I>(pub I)
-where
-    T: ToString,
-    I: IntoIterator<Item = T>;
+    pub fn right_join<S: ToString>(&mut self, table: S) -> &mut Self {
+        let mut text = String::from("RIGHT JOIN ");
+        text.push_str(&table.to_string());
 
-impl<T, I> Select<T, I>
-where
-    T: ToString,
-    I: IntoIterator<Item = T>,
-{
-    pub fn from<S>(self, table: S) -> SelectFrom
+        self.joins.push(text);
+        self
+    }
+
+    pub fn inner_join<S: ToString>(&mut self, table: S) -> &mut Self {
+        let mut text = String::from("INNER JOIN ");
+        text.push_str(&table.to_string());
+
+        self.joins.push(text);
+        self
+    }
+
+    pub fn cross_join<S: ToString>(&mut self, table: S) -> &mut Self {
+        let mut text = String::from("CROSS JOIN ");
+        text.push_str(&table.to_string());
+
+        self.joins.push(text);
+        self
+    }
+
+    pub fn join<S: ToString>(&mut self, table: S) -> &mut Self {
+        let mut text = String::from("JOIN ");
+        text.push_str(&table.to_string());
+
+        self.joins.push(text);
+        self
+    }
+
+    pub fn on<S: ToString>(&mut self, constraint: S) -> &mut Self {
+        if let Some(last) = self.joins.last_mut() {
+            last.push_str(" ON ");
+            last.push_str(&constraint.to_string());
+        }
+        self
+    }
+
+    pub fn fields<S, I>(&mut self, fields: I) -> &mut Self
     where
         S: ToString,
+        I: IntoIterator<Item = S>,
     {
-        let mut builder = SqlBuilder::select_from(table);
-        builder.fields(self.0);
-        SelectFrom { builder }
-    }
-}
-
-impl<T, I> Builder for Select<T, I>
-where
-    T: ToString,
-    I: IntoIterator<Item = T>,
-{
-    fn build(self) -> Result<String> {
-        SqlBuilder::select_values(self.0).sql()
-    }
-}
-
-pub struct SelectFrom {
-    builder: SqlBuilder,
-}
-
-impl SelectFrom {
-    pub fn join<S>(mut self, table: S) -> Self
-    where
-        S: ToString,
-    {
-        self.builder.join(table);
-        self
-    }
-    pub fn left_join<S>(mut self, table: S) -> Self
-    where
-        S: ToString,
-    {
-        self.builder.left_join(table);
+        let mut fields = fields
+            .into_iter()
+            .map(|f| f.to_string())
+            .collect::<Vec<String>>();
+        self.fields.append(&mut fields);
         self
     }
 
-    pub fn right_join<S>(mut self, table: S) -> Self
-    where
-        S: ToString,
-    {
-        self.builder.right_join(table);
+    pub fn field<S: ToString>(&mut self, field: S) -> &mut Self {
+        self.fields.push(field.to_string());
         self
     }
 
-    pub fn inner_join<S>(mut self, table: S) -> Self
-    where
-        S: ToString,
-    {
-        self.builder.inner_join(table);
+    pub fn group_by<S: ToString>(&mut self, field: S) -> &mut Self {
+        self.group_by.push(field.to_string());
         self
     }
-    pub fn with_where<S: ToString>(mut self, condition: S) -> SelectWhere {
-        self.builder.and_where(condition);
-        SelectWhere {
-            builder: self.builder,
-        }
-    }
-    pub fn group_by<S: ToString>(mut self, column: S) -> GroupBy {
-        self.builder.group_by(column);
-        GroupBy {
-            builder: self.builder,
-        }
-    }
-    pub fn order_by<S: ToString>(mut self, column: S) -> OrderBy {
-        self.builder.order_by(column);
-        OrderBy {
-            builder: self.builder,
-        }
-    }
-    pub fn limit(mut self, limit: u32) -> Limit {
-        self.builder.limit(limit);
-        Limit {
-            builder: self.builder,
-        }
-    }
-}
 
-impl Builder for SelectFrom {
-    fn build(self) -> Result<String> {
-        self.builder.sql()
-    }
-}
-
-pub struct SelectWhere {
-    builder: SqlBuilder,
-}
-
-impl SelectWhere {
-    pub fn and_where<S: ToString>(mut self, condition: S) -> Self {
-        self.builder.and_where(condition);
+    pub fn having<S: ToString>(&mut self, cond: S) -> &mut Self {
+        self.having = Some(cond.to_string());
         self
     }
-    pub fn or_where<S: ToString>(mut self, condition: S) -> Self {
-        self.builder.or_where(condition);
+
+    pub fn and_where<S: ToString>(&mut self, cond: S) -> &mut Self {
+        // Checks
+        let cond = cond.to_string();
+        if cond.is_empty() {
+            return self.set_error(&SqlBuilderError::NoWhereCond);
+        }
+
+        // Change
+        self.wheres.push(cond);
         self
     }
-    pub fn group_by<S: ToString>(mut self, column: S) -> GroupBy {
-        self.builder.group_by(column);
-        GroupBy {
-            builder: self.builder,
+
+    pub fn or_where<S: ToString>(&mut self, cond: S) -> &mut Self {
+        // Checks
+        let cond = cond.to_string();
+        if cond.is_empty() {
+            return self.set_error(&SqlBuilderError::NoWhereCond);
         }
-    }
-    pub fn order_by<S: ToString>(mut self, column: S) -> OrderBy {
-        self.builder.order_by(column);
-        OrderBy {
-            builder: self.builder,
+
+        // Change
+        if self.wheres.is_empty() {
+            self.wheres.push(cond);
+        } else if let Some(last) = self.wheres.last_mut() {
+            last.push_str(" OR ");
+            last.push_str(&cond);
         }
+        self
     }
-    pub fn limit(mut self, limit: u32) -> Limit {
-        self.builder.limit(limit);
-        Limit {
-            builder: self.builder,
+
+    pub fn union<S: ToString>(&mut self, query: S) -> &mut Self {
+        let append = format!(" UNION {}", &query.to_string());
+        self.unions.push_str(&append);
+        self
+    }
+
+    pub fn union_all<S: ToString>(&mut self, query: S) -> &mut Self {
+        self.unions.push_str(" UNION ALL ");
+        self.unions.push_str(&query.to_string());
+        self
+    }
+
+    pub fn order_by<S: ToString>(&mut self, field: S) -> &mut Self {
+        let order = field.to_string();
+        self.order_by.push(order);
+        self
+    }
+
+    pub fn limit<S: ToString>(&mut self, limit: S) -> &mut Self {
+        self.limit = Some(limit.to_string());
+        self
+    }
+
+    pub fn offset<S: ToString>(&mut self, offset: S) -> &mut Self {
+        self.offset = Some(offset.to_string());
+        self
+    }
+
+    pub fn build(&self) -> Result<String> {
+        if let Some(err) = &self.error {
+            return Err(err.clone().into());
         }
-    }
-}
-
-impl Builder for SelectWhere {
-    fn build(self) -> Result<String> {
-        self.builder.sql()
-    }
-}
-
-pub struct GroupBy {
-    builder: SqlBuilder,
-}
-
-impl GroupBy {
-    pub fn having<S: ToString>(mut self, condition: S) -> Having {
-        self.builder.having(condition);
-        Having {
-            builder: self.builder,
+        if self.table.is_empty() {
+            return Err(SqlBuilderError::NoTableName.into());
         }
+
+        // Build query
+        let mut text = self.query()?;
+        text.push(';');
+        Ok(text)
     }
-    pub fn order_by<S: ToString>(mut self, column: S) -> OrderBy {
-        self.builder.order_by(column);
-        OrderBy {
-            builder: self.builder,
+
+    pub fn query(&self) -> Result<String> {
+        if let Some(err) = &self.error {
+            return Err(err.clone().into());
         }
-    }
-    pub fn limit(mut self, limit: u32) -> Limit {
-        self.builder.limit(limit);
-        Limit {
-            builder: self.builder,
-        }
-    }
-}
 
-impl Builder for GroupBy {
-    fn build(self) -> Result<String> {
-        self.builder.sql()
-    }
-}
+        // Make fields
+        let fields = if self.fields.is_empty() {
+            "*".to_string()
+        } else {
+            self.fields.join(", ")
+        };
 
-pub struct Having {
-    builder: SqlBuilder,
-}
+        // Make JOIN parts
+        let joins = if self.joins.is_empty() {
+            String::new()
+        } else {
+            format!(" {}", self.joins.join(" "))
+        };
 
-impl Having {
-    pub fn order_by<S: ToString>(mut self, column: S) -> OrderBy {
-        self.builder.order_by(column);
-        OrderBy {
-            builder: self.builder,
-        }
-    }
-    pub fn limit(mut self, limit: u32) -> Limit {
-        self.builder.limit(limit);
-        Limit {
-            builder: self.builder,
-        }
-    }
-}
+        // Make GROUP BY part
+        let group_by = if self.group_by.is_empty() {
+            String::new()
+        } else {
+            let having = if let Some(having) = &self.having {
+                format!(" HAVING {}", having)
+            } else {
+                String::new()
+            };
+            format!(" GROUP BY {}{}", self.group_by.join(", "), having)
+        };
 
-impl Builder for Having {
-    fn build(self) -> Result<String> {
-        self.builder.sql()
-    }
-}
+        // Make WHERE part
+        let wheres = Self::make_wheres(&self.wheres);
 
-pub struct OrderBy {
-    builder: SqlBuilder,
-}
+        // Make ORDER BY part
+        let order_by = if self.order_by.is_empty() || !self.unions.is_empty() {
+            String::new()
+        } else {
+            format!(" ORDER BY {}", self.order_by.join(", "))
+        };
 
-impl OrderBy {
-    pub fn limit(mut self, limit: u32) -> Limit {
-        self.builder.limit(limit);
-        Limit {
-            builder: self.builder,
-        }
-    }
-}
+        // Make LIMIT part
+        let limit = match &self.limit {
+            Some(limit) => format!(" LIMIT {}", limit),
+            None => String::new(),
+        };
 
-impl Builder for OrderBy {
-    fn build(self) -> Result<String> {
-        self.builder.sql()
-    }
-}
+        // Make OFFSET part
+        let offset = match &self.offset {
+            Some(offset) => format!(" OFFSET {}", offset),
+            None => String::new(),
+        };
 
-pub struct Limit {
-    builder: SqlBuilder,
-}
-
-impl Limit {
-    pub fn offset(mut self, offset: u32) -> Offset {
-        self.builder.offset(offset);
-        Offset {
-            builder: self.builder,
-        }
-    }
-}
-
-impl Builder for Limit {
-    fn build(self) -> Result<String> {
-        self.builder.sql()
-    }
-}
-
-pub struct Offset {
-    builder: SqlBuilder,
-}
-
-impl Builder for Offset {
-    fn build(self) -> Result<String> {
-        self.builder.sql()
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_select() {
-        let select = Select(["column1", "column2"]).from("table1");
-        assert_eq!(
-            select.build().unwrap(),
-            "SELECT column1, column2 FROM table1;"
+        // Make SQL
+        let sql = format!("SELECT {fields} FROM {table}{joins}{wheres}{group_by}{unions}{order_by}{limit}{offset}",
+                          fields = fields,
+                          table = &self.table,
+                          joins = joins,
+                          group_by = group_by,
+                          wheres = wheres,
+                          unions = &self.unions,
+                          order_by = order_by,
+                          limit = limit,
+                          offset = offset,
         );
+        Ok(sql)
+    }
 
-        let select = Select(["column1", "column2"])
-            .from("table1")
-            .join("table2 ON table1.id = table2.table1_id")
-            .with_where("table1.name = 'John'");
-
-        assert_eq!(
-            select.build().unwrap(),
-            "SELECT column1, column2 FROM table1 JOIN table2 ON table1.id = table2.table1_id WHERE table1.name = 'John';"
-        );
+    /// Make WHERE part
+    fn make_wheres(wheres: &[String]) -> String {
+        match wheres.len() {
+            0 => String::new(),
+            1 => {
+                let wheres = wheres[0].to_string();
+                format!(" WHERE {}", wheres)
+            }
+            _ => {
+                let wheres: Vec<String> = wheres.iter().map(|w| format!("({})", w)).collect();
+                format!(" WHERE {}", wheres.join(" AND "))
+            }
+        }
+    }
+    /// Set error during build.
+    fn set_error(&mut self, err: &SqlBuilderError) -> &mut Self {
+        self.error = Some(err.clone());
+        self
     }
 }

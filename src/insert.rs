@@ -1,13 +1,13 @@
 use crate::arg::SqlArg;
 
 #[derive(Clone, Debug)]
-pub struct Insert {
+pub struct InsertBuilder {
     pub(crate) table_name: String,
     pub(crate) fields: String,
     pub(crate) values: String,
 }
 
-impl Insert {
+impl InsertBuilder {
     pub fn into_table<S: ToString>(table_name: S) -> Self {
         Self {
             table_name: table_name.to_string(),
