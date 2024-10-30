@@ -37,7 +37,7 @@ impl SelectBuilder {
         }
     }
 
-    pub fn select_from<S: ToString>(table: S) -> Self {
+    pub fn from_table<S: ToString>(table: S) -> Self {
         Self {
             table: table.to_string(),
             ..Self::default()
