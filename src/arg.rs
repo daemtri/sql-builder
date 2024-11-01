@@ -4,6 +4,14 @@ use rust_decimal::Decimal;
 use crate::quote;
 use std::borrow::{Cow, ToOwned};
 
+pub struct RawSql<T: ToString>(pub T);
+
+impl<T: ToString> SqlArg for RawSql<T> {
+    fn sql_arg(&self) -> String {
+        self.0.to_string()
+    }
+}
+
 pub trait SqlArg {
     fn sql_arg(&self) -> String;
 }
