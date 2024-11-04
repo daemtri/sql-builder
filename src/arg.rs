@@ -290,6 +290,16 @@ where
     }
 }
 
+impl<Tz> SqlArg for &DateTime<Tz>
+where
+    Tz: TimeZone,
+    <Tz as TimeZone>::Offset: std::fmt::Display,
+{
+    fn sql_arg(&self) -> String {
+        quote(self.format("%Y-%m-%d %H:%M:%S").to_string())
+    }
+}
+
 impl<T: SqlArg> SqlArg for Option<T> {
     fn sql_arg(&self) -> String {
         match &*self {
