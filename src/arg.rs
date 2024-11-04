@@ -1,4 +1,4 @@
-use chrono::{NaiveDate, NaiveDateTime};
+use chrono::{DateTime, NaiveDate, NaiveDateTime, TimeZone};
 use rust_decimal::Decimal;
 
 use crate::quote;
@@ -275,6 +275,16 @@ impl SqlArg for NaiveDateTime {
 }
 
 impl SqlArg for &NaiveDateTime {
+    fn sql_arg(&self) -> String {
+        quote(self.format("%Y-%m-%d %H:%M:%S").to_string())
+    }
+}
+
+impl<Tz> SqlArg for DateTime<Tz>
+where
+    Tz: TimeZone,
+    <Tz as TimeZone>::Offset: std::fmt::Display,
+{
     fn sql_arg(&self) -> String {
         quote(self.format("%Y-%m-%d %H:%M:%S").to_string())
     }
